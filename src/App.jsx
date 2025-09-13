@@ -1,15 +1,19 @@
 import React from "react";
-import Topbar from "../components/Topbar.jsx";
-import Sidebar from "../components/Sidebar.jsx";
+import { BrowserRouter as Router , Routes, Route} from "react-router-dom";
+import Country from "../pages/Country.jsx";
+import Layout from "../components/Layout.jsx";
 
 function App() {
- 
   return (
-     <>
-      <Topbar />
-      <Sidebar />
-     </>);
- 
+    <Router>
+      <Routes>
+        <Route path="/" element={<Layout />}>
+          <Route path="country" element={<Country />} />
+          {/* Add more routes here */}
+        </Route>
+      </Routes>
+    </Router>
+  );
 }
 
 export default App;
