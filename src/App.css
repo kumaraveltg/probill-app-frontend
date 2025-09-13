@@ -1,0 +1,71 @@
+.sidebar-custom {
+  background-color: #422b0d;
+  color: #eed883;  /* custom yellow text */
+  border: 2px solid #fff;
+  overflow-y: auto;
+  overflow-x: auto;
+}
+
+.bg-custom {
+  background-color: #422b0d;
+}
+.btn-custom {
+  background-color: #ff6600;   /* your custom background */
+  color: white;                /* text color */
+  border: black;                /* remove border */
+}
+
+.btn-custom:hover {
+  background-color: #e65c00;   /* hover color */
+  color: #fff;
+}
+
+ 
+.btn-custom1 {
+  width: 50px;               
+  height: 50px;              
+  border-radius: 20%;        
+  border: 2px solid white;   
+  background-color: #422b0d; 
+  color: black;              
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  font-size: 1.8rem;         
+  transition: 0.3s; 
+}
+
+.btn-custom1:hover {
+  background-color: #422b0d;    
+  color: #422b0d;             
+  border: 2px solid #422b0d;  
+}
+
+.nav-item.sidebar-item {
+  padding: 8px 12px;
+  border-radius: 5px; /* rounded corners */
+  transition: all 0.3s ease; /* smooth hover */
+}
+
+.nav-item.sidebar-item:hover {
+  background-color: #e65c00; /* blue background on hover */
+  border-left: 4px solid #ffc107; /* colored left border */
+  cursor: pointer; /* shows pointer on hover */
+}
+
+/* Submenu items (indented links) */
+.sidebar-subitem a {
+  display: block;
+  padding: 6px 12px;
+  border-radius: 4px;
+  transition: all 0.2s ease;
+}
+
+/* Hover effect for submenu */
+.sidebar-subitem a:hover {
+  background-color: #e65c00;
+  border-left: 3px solid #ffc107;
+  color: #fff;
+  text-decoration: none;
+}
