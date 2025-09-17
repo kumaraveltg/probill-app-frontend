@@ -69,3 +69,32 @@
   color: #fff;
   text-decoration: none;
 }
+
+.btn-edit
+{
+ background-color: #422b0d;
+ color: #fff;
+ border: #ffc107;
+}
+.btn-new
+{
+ background-color: #fcc00f;
+ color: #0c0c0c;
+ border: #422b0d;
+ font-weight: bold;
+}
+.btn-delete
+{
+background-color: #ff6600;
+color:#422b0d;
+border: #fff;
+font-weight: bold;
+}
+/* all required input tag should be display *red color */
+label.required::after {
+  content: " *";
+  color: red;
+  font-size: 20px;      /* make star bigger */
+  font-weight: bold;    /* optional, makes it thicker */
+  vertical-align: middle
+}
