@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { Modal, Button, Form, Spinner } from "react-bootstrap";
+ 
 
 function SearchModal({ show, onClose, apiUrl, columns, searchFields, onSelect }) {
   const [data, setData] = useState([]);
@@ -82,7 +83,7 @@ function SearchModal({ show, onClose, apiUrl, columns, searchFields, onSelect })
             {data.map((item) => (
               <tr key={item.id}>
                 {columns.map((col) => (
-                  <td key={col.field}>
+                  <td key={`${item.id}-${col.field}`}>
                     {col.render ? col.render(item[col.field], item) : item[col.field]}
                   </td>
                 ))}
