@@ -1,39 +1,21 @@
 import React, { useContext, useEffect, useState } from "react";
 import SearchModal from "../components/SearchModal";
 import { FaSearch, FaPlus } from "react-icons/fa";
-import { useSearchParams } from "react-router-dom";
 import DataContext from "../context/DataContext";
 import { API_URL } from "../components/Config";
+import Select from "react-select";
+import { useMemo } from "react";
  
 
 /* STATE LIST <COMPONENT--------></COMPONENT-------->*/
 function State(){
-    const {states,fetchStates,loading,error} = useContext(DataContext);
+    const {states,total,fetchStates,loading,error} = useContext(DataContext);
     const [showForm,setShowForm]=useState(false);
     const [search,setSearch]= useState('');
     const [editState,setEditState]=useState();
     const [page,setPage]= useState(0);
-    const [stateObject,setStateObject]=useState()
-    const limit = 10;
-
-
-  
-
-// //fetch State API
-// const skip = page * limit;
-// const fetchStates= async () => {
-//     try {
-//         const res = await fetch(`${API_URL}/states/?skip=${skip}&limit=${limit}`);
-//         if(!res.ok)  throw new Error(`Http Error ! status:${res.status}`) ;
-//         const data = await res.json();
-//         setStates(data.sort((a,b) => a.statename.localeCompare(b.statename)));
-        
-//     } catch(err) {
-//         console.error("Error Fetching countries:",err);
-//     }
-// }
-//initial fetch
-//useEffect(() => {fetchStates();},[]);
+    const [stateObject,setStateObject]=useState();
+    const [limit,setLimit] = useState(10);  
 
 const filteredStates = states.filter(c =>
   [
@@ -52,8 +34,12 @@ const filteredStates = states.filter(c =>
   .toLowerCase()
   .includes(search.toLowerCase())
 );
+useEffect(() => {
+  fetchStates(page * limit, limit);
+}, [page,limit]);
 
-console.log(filteredStates);
+ 
+ 
 //New State 
 const handleNew = () => {
     setShowForm(true);
@@ -74,7 +60,8 @@ const handleDelete = async(id) => {
  try{
     const res = await fetch(`${API_URL}/state/${id}`, {method: "DELETE"});
     if(!res.ok) {throw new Error(`Failed Status Delete:${res.status}`); }
-    alert("State Deleted Sucessfully"); fetchStates();
+    alert("State Deleted Sucessfully");
+    fetchStates(page * limit, limit);
 
  }catch(err){
     console.error("Error Deleteing States:",err);
@@ -88,38 +75,73 @@ return (
         <>
           <h4>State List</h4>
           
-              {/* Button Column */}
-          <div className="row mb-3 align-items-center">
-          <div className="col-md-6">
-            <button className="btn btn-new" onClick={handleNew}>
-              <FaPlus className="me-1" /> New State
-            </button>
-        </div>
-        <div className="col-md-6 text-start">
-          <div className="input-group">
-            <span className="input-group-text"> <FaSearch /> </span>
-            <input type="text"
-            className="form-control"
-            placeholder="Search"
-            value={search}
-            onChange={(e)=> setSearch(e.target.value)}
-            />
-          </div>
-        </div>
-        </div>
-            {/* Pagination buttons */}
-        <div style={{ marginTop: "10px" }}>
-            <button 
-            disabled={page === 0}
-            onClick={() => setPage(page - 1)}
-            >
-            Previous
-            </button>
+            {/* Actions Row: New + Search + Pagination */}
+            <div className="row mb-3 align-items-center">
 
-            <span style={{ margin: "0 10px" }}>Page {page + 1}</span>
+              {/* New State Button */}
+              <div className="col-md-3">
+                <button className="btn btn-sm btn-outline-primary w-30" onClick={handleNew}>
+                  <FaPlus className="me-1" /> New 
+                </button>
+              </div>
 
-            <button onClick={() => setPage(page + 1)}>Next</button>
-        </div> 
+              {/* Search Box */}
+              <div className="col-md-5 w-40">
+                <div className="input-group">
+                  <span className="input-group-text"><FaSearch /></span>
+                  <input
+                    type="text"
+                    className="form-control"
+                    placeholder="Search"
+                    value={search}
+                    onChange={(e) => setSearch(e.target.value)}
+                  />
+                  <span className="mb-3 mx-3"> Total Records:{total}</span>
+                </div>
+              </div>
+
+              {/* Pagination */}
+              <div className="col-md-4 text-end">
+                 
+                <label className="me-2">
+                  Rows:{" "}
+                  <select
+                    value={limit}
+                    onChange={(e) => {
+                      setLimit(Number(e.target.value));
+                      setPage(0);
+                    }}
+                  >
+                    <option value={10}>10</option>
+                    <option value={25}>25</option>
+                    <option value={100}>100</option>
+                    <option value={500}>500</option>
+                  </select>
+                </label>
+
+                <button
+                  className="btn btn-sm  btn-outline-primary me-2"
+                  disabled={page === 0}
+                  onClick={() => setPage(page - 1)}
+                >
+                  Previous
+                </button>
+
+                <span>
+                  Page {page + 1} of {Math.ceil(total / limit)}
+                </span>
+
+                <button
+                  className="btn btn-sm btn-outline-primary ms-2"
+                  disabled={(page + 1) * limit >= total}
+                  onClick={() => setPage(page + 1)}
+                >
+                  Next
+                </button>
+              </div>
+            </div>
+
+
           <table className="table table-bordered table-hover">
             <thead className="table-light">
               <tr>
@@ -147,16 +169,16 @@ return (
                   <td>{c.modifiedon}</td>
                   <td>
                     <button
-                    //   className="btn btn-sm btn-edit me-2"
+                      className="btn btn-sm btn-primary me-2"
                       onClick={()=>  setStateObject(c)}
                     >
                       <i className="bi bi-pencil"></i>
                     </button>
                     <button
-                      className="btn btn-sm btn-delete"
+                      className="btn btn-sm btn-danger"
                       onClick={() => handleDelete(c.id)}
                     >
-                      <i class="bi bi-trash3"></i>
+                      <i className="bi bi-trash3"></i>
                     </button>
                   </td>
                 </tr>
@@ -180,9 +202,10 @@ return (
         </>
       ) 
       : (
-        <><StateForm stateValueEdit={stateObject}
+        <>
+        <StateForm stateValueEdit={stateObject}
           onClose={() => setShowForm(false)}
-          onSaved={fetchStates} // ✅ refresh list after save
+          onSaved={()=>fetchStates(page*limit,limit)} // ✅ refresh list after save
           navigateToList={() => setShowForm(false)}
           handleDelete={handleDelete}
           handleNew={handleNew}           
@@ -195,40 +218,67 @@ return (
 }
 
 // State Form
-// function StateForm({editState}){
+
     function StateForm({onClose, onSaved,editState,navigateToList,handleDelete,stateValueEdit }){
     const { countries } = useContext(DataContext);
-    // console.log("countries:",countries);
-    console.log("State****"+stateValueEdit)
     const [formData,setFormData] = useState(
-        {
-            stateCode: "",
-            stateName: "",
-            countryid: 0,
-            countryName: "",
-            active: true,
-            createdby: "admin",
-            modifiedby: "admin",
-        }  );
+      {
+        stateCode: "",
+        stateName: "",
+        countryId: 0,
+        countryName: "",
+        active: true,
+        createdby: "admin",
+        modifiedby: "admin",
+      }  );
     const [showModal,setShowModal]= useState(false);
     const [selectedStates,setSelectedStates] = useState(null);
     const [loading,setLoading] = useState(false);
     const [message,setMessage] = useState("");
-    useEffect( ()=> {
-        if(stateValueEdit){
-            setFormData({
-            id: stateValueEdit.id,
-            stateCode: stateValueEdit.statecode,
-            stateName: stateValueEdit.statename,
-            countryId: stateValueEdit?.countryid,
-            contryName:stateValueEdit.countryname||"",
-            active: stateValueEdit.active,
-            modifiedby:stateValueEdit.modifiedby||"admin",
-        });
-        }
-    },[]  );
 
-    console.log(editState);
+   const countryOptions = useMemo( ()=> countries.map(c => ({
+    value: c.id,        // countryid
+    label: c.countryname, // countryname
+    code: c.countrycode  // keep code also if you want to auto-populate later
+      })),[countries]);
+
+      console.log("Countries:", countries);
+      
+
+  useEffect( ()=> {
+    if(stateValueEdit && countryOptions.length > 0){      
+      const selectedCountry = countryOptions.find(
+      c => c.value === Number(stateValueEdit.countryid)
+      );
+      setFormData( prev=>({
+        ...prev,
+        id: stateValueEdit.id,
+        stateCode: stateValueEdit.statecode,
+        stateName: stateValueEdit.statename,
+        countryId: selectedCountry?.value || null, // ✅ safe
+        countryName: selectedCountry?.label || "",
+        countryCode: selectedCountry?.code || "",
+        active: stateValueEdit.active,
+        createdby: stateValueEdit.createdby || "admin",
+        modifiedby: stateValueEdit.modifiedby || "admin",
+      }));
+    }
+  },[stateValueEdit,countryOptions]);
+
+  useEffect(() => {
+  console.log("📝 formData changed:", formData);
+}, [formData]);
+
+   // Handle dropdown change
+  const handleCountryChange = (selected) => {
+    console.log("👉 Selected from dropdown:", selected);
+    setFormData(prev => ({
+      ...prev,
+      countryId: selected ? selected.value : null,
+      countryName: selected ? selected.label : "",
+      countryCode: selected ? selected.code : ""
+    }));
+  }; 
 
 const handleChange = (e)=>{
     const {name,value,type,checked}= e.target;
@@ -279,6 +329,9 @@ const handleSubmit = async(e) => {
         setLoading(false);
     }
 };
+
+
+
 /* toolbar action*/
   const handleNew = () => {
           setFormData({
@@ -301,8 +354,8 @@ const handleSubmit = async(e) => {
       if(navigateToList) navigateToList();
     }
     const handleDeleteClick = () => {
-  if (handleDelete && editState?.id) {
-    handleDelete(editState.id);   // 👈 pass id
+  if (handleDelete && stateValueEdit?.id) {
+    handleDelete(stateValueEdit.id);   // 👈 pass id
     handleNew()              // 👈 go back to list
   } else {
     alert("No country selected to delete!");
@@ -313,27 +366,30 @@ const handleSubmit = async(e) => {
     { field: "statecode", label: "State Code" },
     { field: "statename", label: "State Name" },
     { field: "active", label: "Active", render: (val) => (val ? "Yes" : "No") },
+    { field: "countryname",label:"Country Name"},
+     
   ];
 
   const searchFields = [
     { value: "statecode", label: "State Code" },
     { value: "statename", label: "State Name" },
     { value: "active", label: "Active" },
+    { value: "countryname",label: "Country Name"},
+    
   ];
-const handleSelectState  = (states) => {
+const handleSelectState  = (stateValueEdit) => {
     setFormData({
-      id: states.id,
-      stateCode: states.statecode,
-      stateName: states.statename,
-      countryId:states.countryid,
-      countryName: states.countryname,
-      active: !!states.active,
-      createdby: states.createdby,
-      modifiedby: states.modifiedby,
+      id: stateValueEdit.id,
+      stateCode: stateValueEdit.statecode,
+      stateName: stateValueEdit.statename,
+      countryId: Number(stateValueEdit.countryid) || 0,
+      countryName: stateValueEdit.countryname,
+      active: !!stateValueEdit.active,
+      createdby: stateValueEdit.createdby,
+      modifiedby: stateValueEdit.modifiedby,
     });
-    };
-    console.log(handleSelectState);
-    console.log("formData.countryId:", formData.countryid); 
+    }; 
+     
  return (
     <div className="card w-100">
     <div className="d-flex justify-content-between align-items-center w-100 "
@@ -343,28 +399,28 @@ const handleSelectState  = (states) => {
       borderRadius: "5px"           // optional rounded corners
       }}
       >
-        <h4 className="mb-0 ">{editState ? "Edit Country" : "New Country"}</h4>
+        <h4 className="mb-0 ">{stateValueEdit ? "Edit State" : "New State"}</h4>
 
         {/* Left-side Buttons */}
         <div className="btn-toolbar gap-2" role="toolbar">
-          <button type="button" className="btn btn-primary " onClick={handleNew}>
-            <i class="bi bi-plus-lg"></i> {/* Add */}
+          <button type="button" className="btn btn-secondary " onClick={handleNew}>
+            <i className="bi bi-plus-lg"></i> {/* Add */}
           </button>
-          <button type="button" className="btn btn-danger " onClick={handleDeleteClick}>
-             <i class="bi bi-dash-lg"></i> {/* Remove */}
+          <button type="button" className="btn btn-secondary " onClick={handleDeleteClick}>
+             <i className="bi bi-dash-lg"></i> {/* Remove */}
           </button>
-          <button type="button" className="btn btn-info" onClick={()=> setShowModal(true)} >
-             <i class="bi bi-search"></i> {/* Search */}
+          <button type="button" className="btn btn-secondary" onClick={()=> setShowModal(true)} >
+             <i className="bi bi-search"></i> {/* Search */}
           </button>
           <button type="button" className="btn btn-secondary" onClick={hadlelist}>
-            <i class="bi bi-list"></i> {/* List */}
+            <i className="bi bi-list"></i> {/* List */}
           </button>
 
           {/* Dropdown Button for Preview */}
           <div className="btn-group">
             <button
               type="button"
-              className="btn btn-warning dropdown-toggle"
+              className="btn btn-secondary dropdown-toggle"
               data-bs-toggle="dropdown"
               aria-expanded="false"  >
                <i class="bi bi-chat-square-dots"></i>
@@ -416,28 +472,44 @@ const handleSelectState  = (states) => {
         </div>
         <div className="mb-3">
         <label className="required" htmlFor="countryId">Country Name</label>
-        <select
-            name="countryId"
-            className="form-control"
-            value={formData.countryId}
-            onChange={handleChange}            
-            /*{(e) => {
-             setFormData({ ...formData, countryId: Number(e.target.value) })
-            }}*/
-            required
-
-            style={{ width: "350px" }}
-        >
-            <option value="">-- Select Country --</option>
-            {countries.map((c) => (
-            <option key={c.id} value={c.id}>
-                {c.countryname}
-            </option>
-            ))}
-        </select>
-         
+        <div style={{ width: "350px" }}>
+                    {countryOptions.length > 0 ? (
+              <Select
+                options={countryOptions}
+                value={countryOptions.find(opt => opt.value === formData.countryId) || null}
+                onChange={(selected) => {
+                  //console.log("Selected country:", selected);
+                  setFormData(prev => ({
+                    ...prev,
+                    countryId: selected ? selected.value : null,
+                    countryName: selected ? selected.label : "",
+                    countryCode: selected ? selected.code : ""
+                  }));
+                }}
+                placeholder="-- Select Country --"
+                isClearable
+                isSearchable 
+                filterOption={(option, inputValue) =>
+                  option.label.toLowerCase().startsWith(inputValue.toLowerCase())
+                }
+              />
+            ) : (
+              <div>Loading countries...</div>
+            )}
+                    
         </div>
-
+        </div>
+        <div>
+        <label htmlFor="">Country Code</label>
+          <input
+          type="text"
+          className="form-control"
+          value={formData.countryCode || ""}
+          readOnly
+          style={{width:"150px" , backgroundColor: "#D3D3D3" }}
+          
+        />     
+        </div>
         <div className="form-check mb-3">
           <input
             type="checkbox"
@@ -454,7 +526,7 @@ const handleSelectState  = (states) => {
           className="btn btn-success me-2"
           disabled={loading}
         >
-          {loading ? "Saving..." :editState? "Update" : "Save"  }
+          {loading ? "Saving..." :stateValueEdit? "Update" : "Save"  }
         </button>
         <button type="button" className="btn btn-secondary" onClick={onClose}>
           Cancel

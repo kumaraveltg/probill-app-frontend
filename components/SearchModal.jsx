@@ -80,10 +80,10 @@ function SearchModal({ show, onClose, apiUrl, columns, searchFields, onSelect })
             </tr>
           </thead>
           <tbody>
-            {data.map((item) => (
-              <tr key={item.id}>
+            {data.map((item,rowIndex) => (
+              <tr key={item.id||rowIndex}>
                 {columns.map((col) => (
-                  <td key={`${item.id}-${col.field}`}>
+                  <td key={`${item.id||rowIndex}-${col.field}`}>
                     {col.render ? col.render(item[col.field], item) : item[col.field]}
                   </td>
                 ))}
