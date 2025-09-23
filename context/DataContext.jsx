@@ -3,14 +3,16 @@ import { API_URL } from "../components/Config";
 
 const DataContext = createContext();
 
-export const DataProvider = ({ children }) => {
-  
+export const DataProvider = ({ children }) => {  
   const [countries, setCountries] = useState([]);
   const [states, setStates] = useState([]);
+  const [citys, setCitys] = useState([]);
+  const [uoms,setUoms] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const limit = 10;
   const [total, setTotal] = useState(0);
+  
   // fetch countries
   const fetchCountries = async (skip=0,limit=10) => {
     try {
@@ -45,11 +47,48 @@ export const DataProvider = ({ children }) => {
       setLoading(false);
     }
   };
+  //Cities
+  const fetchCities = async (skip = 0,limit=10) => {
+    try {
+      setLoading(true); 
+      const res = await fetch(`${API_URL}/cities/?skip=${skip}&limit=${limit}`);
+      if (!res.ok) throw new Error(`HTTP Error ${res.status}`);
+      const data = await res.json();
+      console.log("API response for cities:", data);
+      console.log("total:",data.total);
+       setCitys(data.city_list||[]);
+       setTotal(data.total || 0 );
+      
+    } catch (err) { 
+      setError(err.message);
+    } finally {
+      setLoading(false);
+    }
+  }
+// UOMs
+const fetchUoms = async (skip = 0,limit=10) => {
+  try { 
+    setLoading(true);
+    const res = await fetch(`${API_URL}/uomlist/1/?skip=${skip}&limit=${limit}`);
+    if(!res.ok) throw new Error(`HTTP Error ${res.status}`);
+    const data = await res.json();
+    console.log("API response for uoms:",data);
+    console.log("total:",data.total);
+    setUoms(data.uoms || []);
+    setTotal(data.total || 0);
+  } catch(err){
+    setError(err.message);
+  } finally{
+    setLoading(false);
+  }
+}
 
   // load once
   useEffect(() => {
     fetchCountries();
     fetchStates();
+    fetchCities();
+    fetchUoms();
   }, []);
 
   return (
@@ -57,10 +96,15 @@ export const DataProvider = ({ children }) => {
       value={{
         countries,
         states,
+        citys,
+        uoms,
         fetchCountries,
         fetchStates,
+        fetchCities,
+        fetchUoms,
         loading,
-        error,total
+        error,
+        total,
       }}
     >
       {children}

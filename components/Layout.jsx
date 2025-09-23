@@ -1,19 +1,25 @@
 // Layout.jsx
-import React from "react";
+import React, { useState } from "react";
 import Sidebar from "./Sidebar";
 import Topbar from "./Topbar";
-import { Outlet } from "react-router-dom"; // placeholder for page content
-import { TbBackground } from "react-icons/tb";
+import { Outlet } from "react-router-dom";
 
 function Layout() {
+  const [collapsed, setCollapsed] = useState(false);
+
   return (
-    <div className="d-flex">
-      <Sidebar />
-      <div className="flex-grow-1">
-        <Topbar />
-        <div className="bg-light min-vh-100 p-0">
-          <Outlet /> {/* Page content will render here */}
-        </div>
+    <div>
+      <Topbar />
+      <Sidebar collapsed={collapsed} setCollapsed={setCollapsed} />
+      <div
+        className="main-content"
+        style={{
+          marginLeft: collapsed ? "70px" : "220px", // adjust based on sidebar
+          marginTop: "60px", // topbar height
+          transition: "margin-left 0.3s",
+        }}
+      >
+        <Outlet />
       </div>
     </div>
   );

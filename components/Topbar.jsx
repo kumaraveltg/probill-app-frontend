@@ -3,7 +3,7 @@ import "../src/App.css";
 
 function Topbar() {
   return (
-      <div className="bg-custom  p-2 d-flex align-items-centre justify-content-between">
+      <div className="bg-custom  p-2 d-flex align-items-center justify-content-between topbar-fixed" >
           <div className='d-flex align-item-centre'>
           <img src="/billinglogo.jpg"         
           alt="Logo" 

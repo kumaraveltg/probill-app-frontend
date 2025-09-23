@@ -19,7 +19,7 @@ function SearchModal({ show, onClose, apiUrl, columns, searchFields, onSelect })
 
       // Build API query
       const url = `${apiUrl}?field=${field}&value=${encodeURIComponent(search)}`;
-
+       console.log("SearchModal API URL:", url);
       fetch(url)
         .then((res) => res.json())
         .then((resData) => {

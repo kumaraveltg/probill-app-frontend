@@ -98,3 +98,35 @@ label.required::after {
   font-weight: bold;    /* optional, makes it thicker */
   vertical-align: middle
 }
+
+/* Topbar fixed */
+.topbar-fixed {
+  position: fixed; /* makes it fixed */
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 60px;    /* match your Topbar height */
+  z-index: 1000;
+}
+
+/* Sidebar fixed */
+.sidebar-custom {
+  position: fixed;
+  top: 60px; /* below topbar */
+  left: 0;
+  bottom: 0;
+  width: 220px; /* collapsed will be 70px */
+  overflow-y: auto;
+  z-index: 999;
+  transition: width 0.3s;
+}
+
+/* Main content */
+.main-content {
+  margin-left: 220px; /* match sidebar width */
+  margin-top: 60px;   /* match topbar height */
+  padding: 20px;
+  min-height: calc(100vh - 60px);
+  overflow-x: hidden;  /* prevent horizontal scroll */
+  transition: margin-left 0.3s;
+}

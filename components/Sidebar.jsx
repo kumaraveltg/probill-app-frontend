@@ -1,9 +1,10 @@
 import React, { useState } from "react";
 import "../src/App.css";
 import { Link } from "react-router-dom";
+import Layout from "./Layout";
 
-function Sidebar() {
-  const [collapsed, setCollapsed] = useState(false);
+function Sidebar({ collapsed, setCollapsed }) {
+  //const [collapsed, setCollapsed] = useState(false);
   const [open, setOpen] = useState(false);
 
   return (
@@ -11,8 +12,11 @@ function Sidebar() {
       className="sidebar-custom d-flex flex-column p-2"
       style={{
         width: collapsed ? "70px" : "220px",
+        top: "60px",
         transition: "width 0.3s",
-        minHeight: "100vh"
+        minHeight: "calc(100vh - 60px)",
+        position: "fixed",
+        overflowY: "auto",
       }}
     >
       {/* Toggle Button */}
@@ -86,12 +90,23 @@ function Sidebar() {
               </li>
               <li className="nav-item sidebar-subitem">
                 <Link className="nav-link text-light small p-1" to="/state">
-                  State
+                  State  
                 </Link>
               </li>
+              
               <li className="nav-item sidebar-subitem">
                 <Link className="nav-link text-light small p-1" to="/city">
                   City
+                </Link>
+              </li>
+              <li className="nav-item sidebar-subitem">
+                <Link className="nav-link text-light small p-1" to="#">
+                  Company Master 
+                </Link>
+              </li>
+              <li className="nav-item sidebar-subitem">
+                <Link className="nav-link text-light small p-1" to="uom">
+                  Unit of Measurement (UOM)
                 </Link>
               </li>
             </ul>
