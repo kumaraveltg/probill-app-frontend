@@ -100,7 +100,12 @@ function Sidebar({ collapsed, setCollapsed }) {
                 </Link>
               </li>
               <li className="nav-item sidebar-subitem">
-                <Link className="nav-link text-light small p-1" to="#">
+                <Link className="nav-link text-light small p-1" to="currency">
+                  Currency
+                </Link>
+              </li>
+              <li className="nav-item sidebar-subitem">
+                <Link className="nav-link text-light small p-1" to="/company">
                   Company Master 
                 </Link>
               </li>
@@ -109,6 +114,7 @@ function Sidebar({ collapsed, setCollapsed }) {
                   Unit of Measurement (UOM)
                 </Link>
               </li>
+              
             </ul>
           )}
         </li>

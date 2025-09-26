@@ -1,26 +1,24 @@
 import { useState,useContext,useEffect } from "react";
 import { FaPlus, FaSearch } from "react-icons/fa";
-import DataContext from "../context/DataContext";
+import DataCurrency from "../context/DataCurrency";
 import { API_URL } from "../components/Config"; 
-import UomForm from "./UomForm.jsx";
+import CurrencyForm from "./CurrencyForm.jsx";
 import { useNavigate } from "react-router-dom";
 
-function Uom() {
-    const {uoms,fetchUoms,Loading,total,error} = useContext(DataContext);
+function Currency() {
+    const {currencies,fetchCurrencies,Loading,total,error} = useContext(DataCurrency);
     const [showForm,setShowForm]=useState(false);
     const [search,setSearch]= useState('');
     const [page,setPage]= useState(0);
-    const [uomObject,setUomObject]=useState();
+    const [currencyObject,setCurrencyObject]=useState();
     const [limit,setLimit] = useState(10);
 
- const filteredUoms = uoms.filter(c =>
+ const filteredCurrency = currencies.filter(c =>
   [
     c.id,
-    c.uomcode,
-    c.uomname,
-    c.active ? "Yes" : "No",
-    c.companyid,
-    c.companyname,  
+    c.currencycode,
+    c.currencyname,
+    c.active ? "Yes" : "No",     
     c.createdby,
     c.modifiedby,
     c.createdon,
@@ -31,32 +29,32 @@ function Uom() {
   .includes(search.toLowerCase())
 );
 useEffect(() => {
-  fetchUoms(page * limit, limit);
+  fetchCurrencies(page * limit, limit);
 }, [page,limit]);
 
 //New UOM 
 const handleNew = () => {
     setShowForm(true);
-    setUomObject(null);
+    setCurrencyObject(null);
 };
 
 const handleUomSaved = () => {
-  fetchUoms(); // refresh list
+  fetchCurrencies(); // refresh list
 };
 
 
 useEffect(()=>{ 
-uomObject && setShowForm(true); 
-},[uomObject])
+currencyObject && setShowForm(true); 
+},[currencyObject])
 
 const handleDelete = async(id) => {
  if (!window.confirm("Are you Sure Want to Delete this UOM?"))
      return;
     try{
-    const res = await fetch(`${API_URL}/uomdelete/${id}`, 
+    const res = await fetch(`${API_URL}/currency/deletecurrency/${id}`, 
       { method: "DELETE" });
     if (res.ok) {
-        fetchUoms(page * limit, limit);
+        fetchCurrencies(page * limit, limit);
     }   
     else {
         console.error("Failed to delete UOM");
@@ -68,7 +66,7 @@ const handleDelete = async(id) => {
     return (    
         <div className="container-fluid">
         <div className="d-flex justify-content-between align-items-center my-3">
-          <h2>Unit of Measurement (UOM)</h2>
+          <h2>Currency</h2>
           <button className="btn btn-primary" onClick={handleNew}>
             <FaPlus className="me-2" />
             New UOM
@@ -83,7 +81,7 @@ const handleDelete = async(id) => {
             <input 
                 type="text"
                 className="form-control"
-                placeholder="Search UOM..."
+                placeholder="Search Currency..."
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
             />  
@@ -91,10 +89,9 @@ const handleDelete = async(id) => {
 <div style={{ maxHeight: "500px", overflowY: "auto" }}>   
 <table className="table table-bordered table-hover">        
 <thead className="table-light">
-<tr>
-<th>Company Name</th>
-<th>UOM Code</th>
-<th>UOM Name</th>   
+<tr> 
+<th>Currency Code</th>
+<th>Currency Name</th>   
 <th>Active</th>
 <th>Created By</th>
 <th>Created On</th> 
@@ -112,31 +109,30 @@ const handleDelete = async(id) => {
 <tr>
     <td colSpan="9" className="text-center text-danger">Error: {error}</td>     
 </tr>
-) : filteredUoms.length === 0 ? (
+) : filteredCurrency.length === 0 ? (
 <tr>    
-    <td colSpan="9" className="text-center">No UOMs found.</td>
+    <td colSpan="9" className="text-center">No Currency found.</td>
 </tr>
 ) : (    
-filteredUoms.map((uom) => ( 
-    <tr key={uom.id}>   
-        <td>{uom.companyname}</td>
-        <td>{uom.uomcode}</td>
-        <td>{uom.uomname}</td>  
-        <td>{uom.active ? "Yes" : "No"}</td>
-        <td>{uom.createdby}</td>
-        <td>{uom.createdon}</td> 
-        <td>{uom.modifiedby}</td>
-        <td>{uom.modifiedon}</td>
+filteredCurrency.map((cur) => ( 
+    <tr key={cur.id}>   
+        <td>{cur.currencycode}</td>
+        <td>{cur.currencyname}</td>  
+        <td>{cur.active ? "Yes" : "No"}</td>
+        <td>{cur.createdby}</td>
+        <td>{cur.createdon}</td> 
+        <td>{cur.modifiedby}</td>
+        <td>{cur.modifiedon}</td>
         <td>
             <button 
                 className="btn btn-sm btn-primary me-2" 
-                onClick={() => setUomObject(uom)}
+                onClick={() => setCurrencyObject(cur)}
             >
                 <i className="bi bi-pencil"></i> 
             </button>
             <button 
                 className="btn btn-sm btn-danger"
-                onClick={() => handleDelete(uom.id)}
+                onClick={() => handleDelete(cur.id)}
             >
                 <i className="bi bi-trash3"></i>
             </button>   
@@ -149,7 +145,7 @@ filteredUoms.map((uom) => (
 </div>
 <div className="d-flex justify-content-between align-items-center my-3"
 >    
-    <div>Total UOMs: {total}</div>
+    <div>Total Currencies: {total}</div>
    <label>
     Rows:
       <select
@@ -187,21 +183,21 @@ filteredUoms.map((uom) => (
 </div>
 </>     
         ) : (
-        <UomForm
-            uomObject={uomObject}
-            setUomObject={setUomObject}
+        <CurrencyForm
+            currencyObject={currencyObject}
+            setCurrencyObject={setCurrencyObject}
             onClose={() => { setShowForm(false);
-                 setUomObject(null); 
-                 fetchUoms(page * limit, limit); }
+                 setCurrencyObject(null); 
+                 fetchCurrencies(page * limit, limit); }
                 }
-            fetchUoms={fetchUoms}
+            fetchCurrencies={fetchCurrencies}
             navigateToList={() => { setShowForm(false);
-                 setUomObject(null); 
-                 fetchUoms(page * limit, limit); }
+                 setCurrencyObject(null); 
+                 fetchCurrencies(page * limit, limit); }
                 }
             handleDelete={handleDelete}
             handleNew={handleNew} 
-            OnSaved={handleUomSaved}  
+            onSaved={handleUomSaved}  
             
         />
         )} 
@@ -209,4 +205,4 @@ filteredUoms.map((uom) => (
     );                
 
 }
-export default Uom;
+export default Currency;

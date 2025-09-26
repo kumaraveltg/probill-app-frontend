@@ -8,6 +8,7 @@ export const DataProvider = ({ children }) => {
   const [states, setStates] = useState([]);
   const [citys, setCitys] = useState([]);
   const [uoms,setUoms] = useState([]);
+  const [companies,setCompanies]= useState(false)
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const limit = 10;
@@ -83,13 +84,39 @@ const fetchUoms = async (skip = 0,limit=10) => {
   }
 }
 
+// CompanyList
+const fetchCompanies = async (companyId ) => {
+  try {
+    setLoading(true);
+    const res = await fetch(`${API_URL}/company/companylist/1/`);     
+    console.log("fetchres",res);
+    if (!res.ok) throw new Error(`Http Error ${res.status}`);
+    const data = await res.json();
+    const companiesData = data.companies|| [];
+    const totalCount = data.total || companiesData.length;
+    console.log("API response for company:", data);
+    setCompanies(Array.isArray(data) ? data : [data]);
+    setTotal(1); // match FastAPI response
+    console.log("api response companies",companies);         // optional: total count
+  } catch (err) {
+    setError(err.message);
+  } finally {
+    setLoading(false);
+  }
+};
+
+
   // load once
-  useEffect(() => {
-    fetchCountries();
-    fetchStates();
-    fetchCities();
-    fetchUoms();
-  }, []);
+ useEffect(() => {
+  const fetchData = async () => {
+    await fetchCountries();
+    await fetchStates();
+    await fetchCities();
+    await fetchUoms();
+    await fetchCompanies();
+  };
+  fetchData();
+}, []);
 
   return (
     <DataContext.Provider
@@ -98,10 +125,12 @@ const fetchUoms = async (skip = 0,limit=10) => {
         states,
         citys,
         uoms,
+        companies,
         fetchCountries,
         fetchStates,
         fetchCities,
         fetchUoms,
+        fetchCompanies,
         loading,
         error,
         total,
