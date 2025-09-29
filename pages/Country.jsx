@@ -1,31 +1,34 @@
-import React, { useEffect, useState } from "react";
+import React, { useContext, useEffect, useState } from "react";
 import { FaSearch, FaPlus } from "react-icons/fa";
 import SearchModal from "../components/SearchModal";
+import DataContext from "../context/DataContext";
+import { AuthContext } from "../context/AuthContext";
 
 // ================== COUNTRY  LIST COMPONENT ==================
 function Country() {
-  const [countries, setCountries] = useState([]);
+  const {countries,fetchCountries} = useContext(DataContext);
+  const {accessToken,authFetch} = useContext(AuthContext) 
   const [showForm, setShowForm] = useState(false);
   const [ search, setSearch] = useState('');
   const [editcountry,setEditcountry]= useState(null);
 
   // Fetch countries function in component scope
-  const fetchCountries = async () => {
-    try {
-      const res = await fetch(
-        "http://localhost:8000/country/?skip=0&limit=100"
-      );
-      if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
-      const data = await res.json();
-      setCountries(data.sort((a,b) => a.countryname.localeCompare(b.countryname)));
-    } catch (err) {
-      console.error("Error fetching countries:", err);
-    }
-  };
+  // const fetchCountries = async () => {
+  //   try {
+  //     const res = await fetch(
+  //       "http://localhost:8000/country/?skip=0&limit=100"
+  //     );
+  //     if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
+  //     const data = await res.json();
+  //     setCountries(data.sort((a,b) => a.countryname.localeCompare(b.countryname)));
+  //   } catch (err) {
+  //     console.error("Error fetching countries:", err);
+  //   }
+  // };
 
   // Initial fetch
   useEffect(() => {
-    fetchCountries();
+    fetchCountries(accessToken);
   }, []);
 
   const filteredCountries = countries.filter(c =>
@@ -44,7 +47,9 @@ console.log("countries:",fetchCountries)
     }
     try {
        const res= await fetch(`http://127.0.0.1:8000/country/${id}`,
-       { method:"DELETE",}
+       { method:"DELETE",
+        'Authorization': `Bearer ${accessToken}`
+       }
        );
        if(!res.ok){
           throw new Error(`Failed Delete Status: ${res.status}`);
@@ -122,13 +127,13 @@ console.log("countries:",fetchCountries)
                       className="btn btn-sm btn-edit me-2"
                       onClick={() => handleEdit(c)}
                     >
-                      <i class="bi bi-pencil"></i>
+                      <i className="bi bi-pencil"></i>
                     </button>
                     <button
                       className="btn btn-sm btn-delete"
                       onClick={() => handleDelete(c.id)}
                     >
-                      <i class="bi bi-trash3"></i>
+                      <i className="bi bi-trash3"></i>
                     </button>
                   </td>
                 </tr>

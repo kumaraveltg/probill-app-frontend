@@ -3,10 +3,12 @@ import { FaPlus, FaSearch } from "react-icons/fa";
 import DataContext from "../context/DataContext";
 import { API_URL } from "../components/Config";   
 import CompanyForm from "./CompanyForm.jsx";
+import { AuthContext } from "../context/AuthContext.jsx";
 
 
 function Company() {
   const { companies, fetchCompanies, Loading, total, error  } = useContext(DataContext);
+  const { accessToken } = useContext(AuthContext);
   const [showForm, setShowForm] = useState(false);
   const [search, setSearch] = useState('');
   const [page, setPage] = useState(0);
@@ -39,7 +41,14 @@ function Company() {
       )
     : []; 
 
-     
+    
+    useEffect(() => {
+        console.log("Current Access Token in useEffect:", accessToken);
+    if (accessToken) { 
+      fetchCompanies(accessToken);
+    }
+  }, [accessToken]);
+
 
   const handleNew = () => {
     setShowForm(true);
@@ -47,7 +56,7 @@ function Company() {
   };
 
   const handleCompanySaved = () => {
-    fetchCompanies(); // refresh list after save
+    fetchCompanies( accessToken); // refresh list after save
   };
 
    
@@ -55,7 +64,14 @@ function Company() {
   const handleDelete = async (id) => {
     if (!window.confirm("Are you sure you want to delete this company?")) return;
     try {
-      const res = await fetch(`${API_URL}/company/deletecompany/${id}`, { method: "DELETE" });
+      const res = await fetch(`${API_URL}/company/deletecompany/${id}`, 
+        { method: "DELETE" ,
+        headers: {
+        'Authorization': `Bearer ${accessToken}` // Add auth header if needed
+      }}
+
+      );
+      console.log("company delete",res);
       if (res.ok) {
         fetchCompanies(page * limit, limit);
       } else {
@@ -205,11 +221,11 @@ function Company() {
             companyObject={companyObject}
             setCompanyObject={setCompanyObject}
             onClose={() => { setShowForm(false); setCompanyObject(null); }}
-            fetchCompanies={fetchCompanies} 
+            fetchCompanies={() => fetchCompanies (accessToken)} 
             handleNew={handleNew} 
             onSaved={handleCompanySaved}   
             navigateToList={() => { setShowForm(false);
-                 setCompanyObject(null);   }  }
+            setCompanyObject(null); }  }
           />
             
       )

@@ -1,24 +1,35 @@
-import React, { createContext, useState, useEffect } from "react";
+import { createContext, useState, useEffect, useContext } from "react";
 import { API_URL } from "../components/Config";
+import { AuthContext } from "./AuthContext";
+
 
 const DataContext = createContext();
 
 export const DataProvider = ({ children }) => {  
+  const { accessToken ,authFetch,companyid} = useContext(AuthContext); 
   const [countries, setCountries] = useState([]);
   const [states, setStates] = useState([]);
   const [citys, setCitys] = useState([]);
   const [uoms,setUoms] = useState([]);
-  const [companies,setCompanies]= useState(false)
+  const [companies,setCompanies]= useState([])
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const limit = 10;
   const [total, setTotal] = useState(0);
   
+  
   // fetch countries
   const fetchCountries = async (skip=0,limit=10) => {
+    console.log("accesstoken",accessToken);
     try {
       setLoading(true);
-      const res = await fetch(`${API_URL}/country/?skip=${skip}&limit=${limit}`);
+      const res = await authFetch(`${API_URL}/country/?skip=${skip}&limit=${limit}`,
+        {
+          headers: {
+            "Authorization": `Bearer ${accessToken}`
+          }
+        }
+      );
       if (!res.ok) throw new Error(`HTTP Error ${res.status}`);
       const data = await res.json();
       setCountries(data.sort((a, b) => a.countryname.localeCompare(b.countryname)));
@@ -30,6 +41,7 @@ export const DataProvider = ({ children }) => {
   };
 
   // fetch states
+  
   const fetchStates = async (skip = 0,limit=10) => {
     try {
       setLoading(true);
@@ -48,6 +60,7 @@ export const DataProvider = ({ children }) => {
       setLoading(false);
     }
   };
+
   //Cities
   const fetchCities = async (skip = 0,limit=10) => {
     try {
@@ -66,11 +79,23 @@ export const DataProvider = ({ children }) => {
       setLoading(false);
     }
   }
-// UOMs
+// UOMs 
+ 
+
 const fetchUoms = async (skip = 0,limit=10) => {
+  if (!companyid) {
+    console.error("Company ID is not set yet!");
+    return;
+  }
+   console.log("Access Token:", accessToken); 
   try { 
     setLoading(true);
-    const res = await fetch(`${API_URL}/uomlist/1/?skip=${skip}&limit=${limit}`);
+    const res = await authFetch(`${API_URL}/uomlist/${companyid}/?skip=${skip}&limit=${limit}`
+      ,{
+      headers: {
+            "Authorization": `Bearer ${accessToken}`
+          }}
+    );
     if(!res.ok) throw new Error(`HTTP Error ${res.status}`);
     const data = await res.json();
     console.log("API response for uoms:",data);
@@ -82,14 +107,28 @@ const fetchUoms = async (skip = 0,limit=10) => {
   } finally{
     setLoading(false);
   }
-}
+} 
+
+// useEffect(() => {
+//   console.log("fetchuoms",fetchUoms)
+//   fetchUoms();
+
+// },[companyid,accessToken])
 
 // CompanyList
-const fetchCompanies = async (companyId ) => {
+const fetchCompanies = async () => {
+   console.log("Access Token:", accessToken); 
   try {
     setLoading(true);
-    const res = await fetch(`${API_URL}/company/companylist/1/`);     
-    console.log("fetchres",res);
+    const res = await authFetch(`${API_URL}/company/companylist/1/`,{
+      headers: {
+            "Authorization": `Bearer ${accessToken}`
+          }
+    });     
+  if (res.status === 401) {
+      console.error("Unauthorized! Token may be invalid or expired");
+      return;
+    }
     if (!res.ok) throw new Error(`Http Error ${res.status}`);
     const data = await res.json();
     const companiesData = data.companies|| [];
@@ -108,15 +147,25 @@ const fetchCompanies = async (companyId ) => {
 
   // load once
  useEffect(() => {
-  const fetchData = async () => {
+  if(accessToken) {
+    const fetchData = async () => {
     await fetchCountries();
     await fetchStates();
-    await fetchCities();
-    await fetchUoms();
+    await fetchCities(); 
     await fetchCompanies();
   };
   fetchData();
-}, []);
+  }
+}, [accessToken]);
+
+useEffect(() => {
+    if (!companyid || !accessToken) return;
+    fetchUoms();
+  }, [companyid, accessToken]);
+
+  useEffect(() => {
+  console.log("AuthContext companyid:", companyid);
+}, [companyid]);
 
   return (
     <DataContext.Provider

@@ -1,7 +1,11 @@
 import React from 'react'
 import "../src/App.css";
+import { useContext } from 'react';
+import { AuthContext } from '../context/AuthContext';
+
 
 function Topbar() {
+    const { logout } = useContext(AuthContext);
   return (
       <div className="bg-custom  p-2 d-flex align-items-center justify-content-between topbar-fixed" >
           <div className='d-flex align-item-centre'>
@@ -47,7 +51,11 @@ function Topbar() {
             <a className="dropdown-item " href="#">Edit Profile</a>
           </li>
           <li>
-            <a className='dropdown-item' href='#'>Logout</a>
+            <a className='dropdown-item' href="#" onClick={(e) => {
+               console.log("🔴 Logout button clicked");
+                e.preventDefault(); // prevent page reload
+                logout();           // call your logout function
+              }}>Logout</a>
           </li>
 
           </ul>
