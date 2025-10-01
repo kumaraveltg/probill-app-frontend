@@ -36,8 +36,7 @@ function Country() {
     .join(" ")
     .toLowerCase().includes(search.toLowerCase())
   );
-console.log("filtered:",filteredCountries);
-console.log("countries:",fetchCountries)
+ 
   
 
   const handleDelete = async(id) => {

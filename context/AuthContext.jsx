@@ -1,4 +1,4 @@
-  import { createContext, useState } from "react";
+  import { createContext, useEffect, useState } from "react";
   import { API_URL } from "../components/Config";
 
   export const AuthContext = createContext();
@@ -7,13 +7,13 @@
     // Tonen Genereation
     const [accessToken, setAccessToken] = useState(localStorage.getItem("accessToken") || null);
     const [refreshToken, setRefreshToken] = useState(localStorage.getItem("refreshToken") || null);
+    //global params
+    const [username,setUsername] = useState(localStorage.getItem("username")||null);
+    const [companyno,setCompanyno] = useState(localStorage.getItem("companyno")||null);
+    const [companyid,setCompanyid]= useState(localStorage.getItem("companyid")||null);
+    const [companycode,setCompanycode] = useState(localStorage.getItem("companycode")||null)
     
-    //Global Parameters
-    const [username, setUsername] = useState(null);
-    const [companyno, setCompanyno] = useState(null);
-    const [companyid, setCompanyid] = useState(localStorage.getItem("companyid") || null);
-    const [companycode, setCompanycode] = useState(null);
-
+    
     const saveAccessToken = (token) => {
       setAccessToken(token);
       if (token) localStorage.setItem("accessToken", token);
@@ -26,7 +26,7 @@
       else localStorage.removeItem("refreshToken");
     };
 
-    const login = async (project, companyno, username, password) => {
+    const jwttoken = async (project, companyno, username, password) => {
   try {
     const res = await fetch(`${API_URL}/login`, {
       method: "POST",
@@ -41,21 +41,13 @@
 
     saveAccessToken(data.access_token);
     saveRefreshToken(data.refresh_token);
-    saveUsername(username);
-    saveCompanyno(companyno);
-    saveCompanyid(data.companyid);
-    saveCompanycode(data.companycode);
+   
 
-    console.log("AuthContext values after login:", {
-      username,
-      companyno,
-      companyid: data.companyid,
-      companycode: data.companycode,
-    });
   } catch (err) {
     console.error("Login error:", err.message);
   }
 };
+
   const logout = () => {
       setAccessToken(null);
       setRefreshToken(null);
@@ -109,10 +101,50 @@
       return res;
     };
 
+  const global_params = async (usernameInput,companynoInput) => {
+   try {
+       const res = await fetch(`${API_URL}/set_globalparams`,{
+         method: "POST",
+         headers: {"Content-Type": "application/json"},
+         body: JSON.stringify({ username: usernameInput, companyno: companynoInput})
+       }   );
+       const data = await res.json();
+       const params = data.params || {};
+      
+       if(!res.ok) throw new Error( data.detail||"globalparams failed");
+        setUsername(params.username);
+        setCompanycode(params.companycode);
+        setCompanyid(params.companyid);
+        setCompanyno(params.companyno);
+
+         // also save in localStorage (optional persistence)
+        localStorage.setItem("username", params.username);
+        localStorage.setItem("companyid", params.companyid);
+        localStorage.setItem("companyno", params.companyno);
+        localStorage.setItem("companycode", params.companycode);
+        
+         console.log("globalparams Data:",params);
+
+       return params;
+   }
+   catch (err){
+    console.error("Error Globalparams",err.message);
+
+   }}
+     
+  useEffect(() => {
+    if (accessToken) localStorage.setItem("accessToken", accessToken);
+    if (refreshToken) localStorage.setItem("refreshToken", refreshToken);
+    if (username) localStorage.setItem("username", username);
+    if (companyid) localStorage.setItem("companyid", companyid);
+    if (companyno) localStorage.setItem("companyno", companyno);
+    if (companycode) localStorage.setItem("companycode", companycode);
+  }, [accessToken, refreshToken, username, companyid, companyno, companycode]);
+
     return (
       <AuthContext.Provider
         value={{           
-          login,
+          jwttoken,
           logout,
           authFetch, 
           accessToken, 
@@ -122,7 +154,8 @@
           username, setUsername,
           companyno, setCompanyno,
           companyid, setCompanyid,
-        companycode, setCompanycode,
+          companycode, setCompanycode,
+          global_params
         }}
       >
         {children}

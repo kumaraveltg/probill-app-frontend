@@ -114,7 +114,11 @@ function Sidebar({ collapsed, setCollapsed }) {
                   Unit of Measurement (UOM)
                 </Link>
               </li>
-              
+              <li className="nav-item sidebar-subitem">
+                <Link className="nav-link text-light small p-1" to="/users">
+                  Users
+                </Link>
+              </li>
             </ul>
           )}
         </li>

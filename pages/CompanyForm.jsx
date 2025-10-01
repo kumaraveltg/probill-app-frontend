@@ -5,11 +5,13 @@ import SearchModal from "../components/SearchModal";
 import DataCurrency from "../context/DataCurrency";
 import Select from "react-select";  
 import Company from "./Company";
+import { AuthContext } from "../context/AuthContext";
 
 
 
 function CompanyForm({ onClose,onSaved, companyObject,navigateToList }) {
   const {  currencies} = useContext(DataCurrency); 
+  const {accessToken,fetchAuth} = useContext(AuthContext)
   const [formData, setFormData] = useState({
     id: null,
     companycode: "", 

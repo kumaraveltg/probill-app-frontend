@@ -2,19 +2,22 @@ import React from "react";
 import { useContext } from "react";
 import { AuthContext } from "../context/AuthContext.jsx";
 import { BrowserRouter as Router , Routes, Route} from "react-router-dom";
+import { DataProvider }  from '../context/DataContext'; 
+import { DataCurrencyProvider } from "../context/DataCurrency";
+import {  AuthProvider } from "../context/AuthContext.jsx";
+import { Navigate } from "react-router-dom";
+import { useSessionTimeout } from "../hooks/useSessonTimeout.jsx"; 
 import Country from "../pages/Country.jsx";
 import Layout from "../components/Layout.jsx";
 import State  from "../pages/State.jsx";
 import City from "../pages/City.jsx";
-import { DataProvider }  from '../context/DataContext'; 
 import Uom from "../pages/Uom.jsx"; 
 import Company from "../pages/Company.jsx" 
 import Currency from "../pages/Currency.jsx"
-import { DataCurrencyProvider } from "../context/DataCurrency";
-import {  AuthProvider } from "../context/AuthContext.jsx";
 import Login from "../pages/Login.jsx"
-import { Navigate } from "react-router-dom";
-import { useSessionTimeout } from "../hooks/useSessonTimeout.jsx"; 
+import Users from "../pages/users.jsx";
+
+
 
 // Protected route component
 const ProtectedRoute = ({ children }) => {
@@ -45,6 +48,8 @@ function App() {
               <Route path="uom" element={<Uom />} /> 
               <Route path="company" element={<Company />} />
               <Route path="currency" element={<Currency />} />
+              <Route path="users" element={<Users />} />
+
             </Route>
              {/* Default root goes to /login */}
             <Route path="/" element={<Navigate to="/login" replace />} />            
