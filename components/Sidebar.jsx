@@ -119,6 +119,11 @@ function Sidebar({ collapsed, setCollapsed }) {
                   Users
                 </Link>
               </li>
+              <li className="nav-item sidebar-subitem">
+                <Link className="nav-link text-light small p-1" to="userrole">
+                  UserRole
+                </Link>
+              </li>
             </ul>
           )}
         </li>

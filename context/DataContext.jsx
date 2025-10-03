@@ -14,6 +14,7 @@ export const DataProvider = ({ children }) => {
   const [uoms, setUoms] = useState([]);
   const [companies, setCompanies] = useState([]);
   const [busers,setBusers]= useState([])
+  const [userRole,setUserRole]= useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const limit = 10;
@@ -163,15 +164,13 @@ export const DataProvider = ({ children }) => {
       if(!res.ok) throw new Error(`Http Error ${res.status}`);
       const data = await res.json();
        
-      // Destructure with defaults
-      const { busers = [], total = 0 } = data;
+       
 
       // Update state
-      setBusers(busers);
-      setTotal(total);
+      setBusers(data.list_users||[]);
+      setTotal(data.total);
      console.log("fetch users:",data);
-    // Log the fetched users immediately from API response
-     console.log("Fetched Users from API:", data.busers || []);
+     
       
   }
   catch(err){
@@ -181,14 +180,43 @@ export const DataProvider = ({ children }) => {
     setLoading(false)
   }
  }, [companyid, accessToken, authFetch] )
+ 
+ // userRole
+const fetchUserRole= useCallback( async(skip = 0, limit = 10) => {
+  try{
+    setLoading(true);
+    setError(null);
+    const res= await authFetch(`${API_URL}/getuserroles/${companyid}/?skip=${skip}&limit=${limit}`,
+      {
+        headers: {"Authorization": `Bearer ${accessToken}`}
+      }    );
+      if(res.status== 401) {
+        console.error("Unauthorized Token may be invalid or Expired");
+        return;
+      }
+      if(!res.ok) throw new Error(`Http Error ${res.status}`);
+      const data = await res.json(); 
 
+      // Update state
+      setUserRole(data.user_rolelist||[]);
+      setTotal(data.total);
+     console.log("fetch usersRole:",data); 
+      
+  }
+  catch(err){
+    setError(err.message)
+  }
+  finally{
+    setLoading(false)
+  }
+ } ,[companyid, accessToken, authFetch] )
 
 
  //✅ Initial data load - only when accessToken is available
   useEffect(() => {
     if (accessToken) {
-      const fetchData = async () => { 
-        await fetchUsers();  
+      const fetchData = async () => {  
+        await fetchUserRole();
       };
       fetchData();
     }
@@ -201,10 +229,10 @@ export const DataProvider = ({ children }) => {
     console.log("AuthContext companyid:", companyid);
     if (companyid && accessToken) {
       console.log("Fetching UOMs with companyid:", companyid);
-         fetchUsers(0,10);
-      console.log("fetching users",busers)
+        
+          fetchUserRole();
     }
-  }, [companyid, accessToken, fetchUsers ]);
+  }, [companyid, accessToken,fetchUserRole]);
 
   return (
     <DataContext.Provider
@@ -222,7 +250,7 @@ export const DataProvider = ({ children }) => {
         loading,
         error,
         total,
-        companyid,busers,fetchUsers
+        companyid,busers,fetchUsers,userRole,fetchUserRole
       }}
     >
       {children}

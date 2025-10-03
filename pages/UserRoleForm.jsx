@@ -5,21 +5,101 @@ import { API_URL } from "../components/Config";
 import SearchModal from "../components/SearchModal"; 
 import { AuthContext } from "../context/AuthContext";
 
- function UsersForm( {onSaved, usersObject, setUsersObject, navigateToList, handleDelete, onClose} ) {
- const {fetchUsers,busers,companyid,companyname,companyno } = useContext(DataContext); 
+
+
+const defaultPerms = [
+    {
+      module: "General Master",
+      forms: "Country",
+      permtype: { view: true, edit: true, create: true, delete: true }
+    },
+    {
+      module: "General Master",
+      forms: "State",
+      permtype: { view: true, edit: true, create: true, delete: true }
+    },
+    {
+      module: "General Master",
+      forms: "City",
+      permtype: { view: true, edit: true, create: true, delete: true }
+    },
+    {
+      module: "General Master",
+      forms: "Company Master",
+      permtype: { view: true, edit: true, create: true, delete: true }
+    },
+    {
+      module: "General Master",
+      forms: "Currency",
+      permtype: { view: true, edit: true, create: true, delete: true }
+    },
+    {
+      module: "General Master",
+      forms: "Unit of Messaurement(UOM)",
+      permtype: { view: true, edit: true, create: true, delete: true }
+    },
+    {
+      module: "General Master",
+      forms: "Users",
+      permtype: { view: true, edit: true, create: true, delete: true }
+    },
+    {
+      module: "General Master",
+      forms: "User Role",
+      permtype: { view: true, edit: true, create: true, delete: true }
+    },
+    {
+      module: "General Master",
+      forms: "Financial Years",
+      permtype: { view: true, edit: true, create: true, delete: true }
+    },
+     {
+      module: "Master",
+      forms: "Products",
+      permtype: { view: true, edit: true, create: true, delete: true }
+    },
+    {
+      module: "Master",
+      forms: "Customers",
+      permtype: { view: true, edit: true, create: true, delete: true }
+    },
+    {
+      module: "Transaction",
+      forms: "Sales Invoice",
+      permtype: { view: true, edit: true, create: true, delete: true }
+    },
+     {
+      module: "Transaction",
+      forms: "Receipts",
+      permtype: { view: true, edit: true, create: true, delete: true }
+    },
+     {
+      module: "Reports",
+      forms: "Sales Register",
+      permtype: { view: true, edit: true, create: true, delete: true }
+    },
+     {
+      module: "Reports",
+      forms: "Customerwise Outstanding",
+      permtype: { view: true, edit: true, create: true, delete: true }
+    },
+  ];
+ 
+
+ function UserRoleForm( {onSaved, userRoleObject, setUserRoleObject, navigateToList, handleDelete, onClose} ) {
+ const {fetchUserRole,userRole,companyid,companyname,companyno } = useContext(DataContext); 
  const { accessToken,authFetch } = useContext(AuthContext);
- const[ selectedUsers,setSelectedUsers]= useState(usersObject||null);
+ const[ selectedUsers,setSelectedUsers]= useState(userRoleObject||null);
+ const [permissions, setPermissions] = useState(defaultPerms);
+ const [expandedModule, setExpandedModule] = useState(null);
  const [ formData,setFormData]= useState(
     {
         id: null,
         companyid: companyid?? null,
         companyname: companyname?? "",
-        companyno: companyno?? "",
-        username: "",
-        password:"",
-        firstname: "",
-        emailid: "",
-        userroleids: null,
+        companyno: companyno?? "", 
+        rolename:"",
+        permissions:[] ,
         active: true,
         createdby: "",
         modifiedby: ""
@@ -28,28 +108,30 @@ import { AuthContext } from "../context/AuthContext";
   const [isEdit, setIsEdit] = useState(false);
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState("");
+  
+ 
 
   const resetForm = () => {
     let defaultCompanyName = "Default Company";
     let defaultUsername= "";
     let defaultcompanyno="";
-
+    
      const fallbackParams = JSON.parse(localStorage.getItem("globalParams") || "{}");
-
+     console.log("globalparams:",fallbackParams);
       const cid = companyid ?? fallbackParams.companyid;
       const uname = fallbackParams.username;
       const cno = fallbackParams.companyno;
 
     
-    if (Array.isArray(busers)) {
-      const match = busers.find(
+    if (Array.isArray(userRole)) {
+      const match = userRole.find(
         (c) => c.companyid === (companyid ?? companyid)
       );
       console.log("Matched company:", match);
       if (match) {
         defaultCompanyName = match.companyname;
-        defaultUsername  = match.username;
-        defaultcompanyno= match.companyno;
+        defaultUsername  = match.username??uname; 
+        defaultcompanyno = match.companyno && match.companyno.trim() !== "" ? match.companyno : cno;
       }else {
     defaultCompanyName = fallbackParams.companyname ?? defaultCompanyName;
     defaultUsername = uname ?? defaultUsername;
@@ -63,11 +145,8 @@ import { AuthContext } from "../context/AuthContext";
         companyid: companyid?? null,
         companyname: defaultCompanyName,
         companyno: defaultcompanyno,
-        username: "",
-        password: "",
-        firstname: "",
-        emailid: "",
-        userroleids: null,
+        rolename:"",
+        permissions:defaultPerms||[],
         active: true,
         createdby:  defaultUsername,
         modifiedby: defaultUsername
@@ -77,16 +156,17 @@ import { AuthContext } from "../context/AuthContext";
   }
 // Populate form for edit or new mode
   useEffect(() => {
-  if (usersObject && usersObject.id) {
+  if (userRoleObject && userRoleObject.id) {
     // Edit mode
-    setFormData({ ...usersObject });
+    setFormData({ ...userRoleObject });
+    setPermissions(userRoleObject.permissions || defaultPerms);
     setIsEdit(true);
   } else {
     // New mode default Company name should be visible
     resetForm();
     
   }
-}, [usersObject]);
+}, [userRoleObject]);
 
 const handleChange = (e) => {
     const { name, value, type, checked } = e.target;
@@ -95,12 +175,22 @@ const handleChange = (e) => {
       [name]: type === "checkbox" ? checked : value
     }));
   };
-
+ // toggle 
+   const toggleModule = (moduleName) => {
+    setExpandedModule(expandedModule === moduleName ? null : moduleName);
+  };
+// Handle permission checkbox changes
+  const handlePermissionChange = (index, permKey) => (e) => {
+    const newPerms = [...permissions];
+    newPerms[index].permtype[permKey] = e.target.checked;
+    setPermissions(newPerms);
+  };
+  
 const handleDeleteClick= ()=>{
-    if(usersObject?.id){
-        handleDelete(usersObject.id);
+    if(userRoleObject?.id){
+        handleDelete(userRoleObject.id);
         resetForm();
-        setUsersObject(null);     
+        setUserRoleObject(null);     
     }
     else
     {
@@ -112,7 +202,7 @@ const handleSubmit = async (e) => {
     setLoading(true);
     setMessage("");
 
-    if (!formData.username) {
+    if (!formData.rolename) {
       setMessage("Please fill in all required fields.");
       setLoading(false);
       return;
@@ -122,18 +212,15 @@ const handleSubmit = async (e) => {
       const payload = {
         companyid: Number(formData.companyid), 
         companyno: formData.companyno,
-        username: formData.username,
-        password:   formData.password || "123456",
-        firstname: formData.firstname,
-        emailid: formData.emailid,
-        userroleids: [1],
+        rolename: formData.rolename,
+        permissions: formData.permissions,
         active: formData.active,
         createdby: formData.createdby || "admin",
         modifiedby: formData.modifiedby || "admin"
       };
 
       const method = "POST"
-      const endpoint = isEdit ? `${API_URL}/users/updateuser/${formData.id}` : `${API_URL}/users/users/`;
+      const endpoint = isEdit ? `${API_URL}/updateuserrole/${formData.id}` : `${API_URL}/adduserrole/`;
 
       console.log("Access Token:", accessToken);
       console.log("Sending payload:", payload);
@@ -165,39 +252,34 @@ const handleSubmit = async (e) => {
     } catch (err) {
       console.error("Error While Saving Users:", err);
 
-      if (Array.isArray(err)) {
-        // Backend returned multiple errors
-        const messages = err.map(e => e?.msg || JSON.stringify(e)).join(", ");
-        setMessage(messages);
-      } else if (err instanceof Error) {
-        setMessage(err.message);
-      } else {
-        setMessage(JSON.stringify(err));
-      }
-
     } finally {
       setLoading(false);
     }
   };
 
 const columns = [
-    { field: "username", label: "User Name" },
-    { field: "firstname", label: "First Name" },
+    { field: "rolename", label: "Role Name" }, 
     { field: "companyname", label: "Company Name"  },
     
   ];
 
   const searchFields = [
-    { value: "username", label: "User Name" },
-    { value: "firstname", label: "First Name" },
+    { value: "rolename", label: "Role Name" }, 
     { value: "companyname", label: "companyname" }, 
   ];
+
+ // Group permissions by module
+  const groupedPermissions = permissions.reduce((acc, perm) => {
+    if (!acc[perm.module]) acc[perm.module] = [];
+    acc[perm.module].push(perm);
+    return acc;
+  }, {});
 
   return (
     <div className="card w-100">
       <div className="d-flex justify-content-between align-items-center w-100"
            style={{ backgroundColor: "#ebe6e6ff", border: "1px solid #ced4da", borderRadius: "5px" }}>
-        <h4 className="mb-0">{isEdit ? "Edit UOM" : "New UOM"}</h4>
+        <h4 className="mb-0">{isEdit ? "Edit UserRole" : "New UserRole"}</h4>
          <div className="btn-toolbar gap-2" role="toolbar">
           <button type="button" className="btn btn-secondary" onClick={resetForm}>
             <i className="bi bi-plus-lg"></i>
@@ -234,65 +316,59 @@ const columns = [
             </div>
           <div className="row mb-3">
             <div className="col-md-4">
-                <label className="form-label">User Name *</label>
+                <label className="form-label">Role Name *</label>
                 <input 
                     type="text" 
                     className="form-control" 
-                    name="username"
-                    value={formData.username} 
+                    name="rolename"
+                    value={formData.rolename} 
                     onChange={handleChange} 
                 />
-            </div>
-
-            <div className="col-md-2">
-                <label className="form-label">Password *</label>
-                <input 
-                    type="password" 
-                    className="form-control" 
-                    name="password"
-                    value={formData.password || ""} 
-                    onChange={handleChange} 
-                />
-            </div>
-
-            <div className="col-md-6">
-                <label className="form-label">First Name *</label>
-                <input 
-                    type="text" 
-                    className="form-control" 
-                    name="firstname"
-                    value={formData.firstname} 
-                    onChange={handleChange} 
-                />
-            </div>
+            </div>  
           </div>
-
-            {/* Second Row */}
-            <div className="row mb-3">
-            <div className="col-md-3">
-                <label className="form-label">Email Id</label>
-                <input 
-                type="email" 
-                className="form-control" 
-                name="emailid"
-                placeholder="example@gmail.com"
-                value={formData.emailid} 
-                onChange={handleChange} 
-                />
-            </div>
-
-            <div className="col-md-3">
-                <label className="form-label">User Role</label>
-                <input 
-                type="text" 
-                className="form-control" 
-                name="userroleids"
-                value={formData.userroleids?.[0] ?? ""}
-                onChange={handleChange} 
-                />
-            </div>
-            
-            </div>   
+          <div className="mb-3">
+            <label>Permissions</label>
+            {Object.entries(groupedPermissions).map(([moduleName, perms]) => (
+              <div key={moduleName} className="mb-2 border rounded p-2">
+                <button
+                  type="button"
+                  className="btn btn-outline-secondary w-100 text-start mb-1"
+                  onClick={() => toggleModule(moduleName)}
+                >
+                  {moduleName} {expandedModule === moduleName ? "▲" : "▼"}
+                </button>
+                {expandedModule === moduleName && (
+                  <table className="table table-bordered mb-0">
+                    <thead>
+                      <tr>
+                        <th>Form</th>
+                        <th>View</th>
+                        <th>Edit</th>
+                        <th>Create</th>
+                        <th>Delete</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {perms.map(p => (
+                        <tr key={p.forms}>
+                          <td>{p.forms}</td>
+                          {["view", "edit", "create", "delete"].map(key => (
+                            <td key={key}>
+                              <input
+                                type="checkbox"
+                                checked={p.permtype[key]}
+                                onChange={handlePermissionChange(p.module, p.forms, key)}
+                              />
+                            </td>
+                          ))}
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                )}
+              </div>
+            ))}
+          </div>
             <div className="col-md-4 mb-3">
               <div className="form-check">
                 <input type="checkbox" className="form-check-input" name="active"
@@ -314,12 +390,12 @@ const columns = [
       <SearchModal
       show={showModal}
       onClose={()=>setShowModal(false)}
-      apiUrl={`${API_URL}/users/search/${companyid}`}
+      apiUrl={`${API_URL}/search/${companyid}`}
       columns={columns}
       searchFields={searchFields}
         onSelect={(users) => {
         setFormData({ ...users }); // update form
-        setUsersObject(users);       // important: now delete knows what to delete
+        setUserRoleObject(users);       // important: now delete knows what to delete
         setIsEdit(true);
         setShowModal(false);
         }}
@@ -330,4 +406,4 @@ const columns = [
 
 }
 
-export default UsersForm;
+export default UserRoleForm;

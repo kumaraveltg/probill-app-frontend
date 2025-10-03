@@ -7,15 +7,16 @@ import { DataCurrencyProvider } from "../context/DataCurrency";
 import {  AuthProvider } from "../context/AuthContext.jsx";
 import { Navigate } from "react-router-dom";
 import { useSessionTimeout } from "../hooks/useSessonTimeout.jsx"; 
-import Country from "../pages/Country.jsx";
 import Layout from "../components/Layout.jsx";
+import Country from "../pages/Country.jsx";
 import State  from "../pages/State.jsx";
 import City from "../pages/City.jsx";
 import Uom from "../pages/Uom.jsx"; 
 import Company from "../pages/Company.jsx" 
 import Currency from "../pages/Currency.jsx"
 import Login from "../pages/Login.jsx"
-import Users from "../pages/users.jsx";
+import Users from "../pages/Users.jsx";
+import UserRole from "../pages/UserRole.jsx";
 
 
 
@@ -49,7 +50,7 @@ function App() {
               <Route path="company" element={<Company />} />
               <Route path="currency" element={<Currency />} />
               <Route path="users" element={<Users />} />
-
+              <Route path="userrole" element={<UserRole />} />
             </Route>
              {/* Default root goes to /login */}
             <Route path="/" element={<Navigate to="/login" replace />} />            
