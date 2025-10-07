@@ -15,6 +15,8 @@ export const DataProvider = ({ children }) => {
   const [companies, setCompanies] = useState([]);
   const [busers,setBusers]= useState([])
   const [userRole,setUserRole]= useState([]);
+  const [finyr,setFinyr] = useState([]);
+  const [taxmaster,setTaxMaster]= useState([]); 
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const limit = 10;
@@ -211,12 +213,68 @@ const fetchUserRole= useCallback( async(skip = 0, limit = 10) => {
   }
  } ,[companyid, accessToken, authFetch] )
 
+ //finyear
+  const fetchFinyr = useCallback(async (skip=0,limit=10) => {
+    console.log("Access Token:", accessToken); 
+    try {
+      setLoading(true);
+      const res = await authFetch(`${API_URL}/header?skip=${skip}&limit=${limit}`, {
+        headers: {
+          "Authorization": `Bearer ${accessToken}`
+        }
+      });     
+      if (res.status === 401) {
+        console.error("Unauthorized! Token may be invalid or expired");
+        return;
+      }
+      if (!res.ok) throw new Error(`Http Error ${res.status}`);
+      const data = await res.json();
+       setFinyr(data.finyrs||[]);
+       setTotal(data.total);
+       console.log("API Response Finyr",data);
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setLoading(false);
+    }
+  },[accessToken,authFetch]);
+
+// TaxMaster- header
+const fetchTaxMaster= useCallback( async(skip= 0, limit = 10) => {
+  console.log("Access Token",accessToken);
+  try{
+    setLoading(true);
+    const res = await authFetch(`${API_URL}/gettax/${companyid}?skip=${skip}&limit=${limit}`, {
+        headers: {
+          "Authorization": `Bearer ${accessToken}`
+        }
+      });
+      if (res.status === 401) {
+        console.error("Unauthorized! Token may be invalid or expired");
+        return;
+      }
+      if (!res.ok) throw new Error(`Http Error ${res.status}`);
+      const data = await res.json();
+       setTaxMaster(data.taxlist||[]);
+       setTotal(data.total);
+       console.log("API Response Taxmaster",data);
+  } 
+  catch(err){
+    setError(err.message);
+  }
+  finally{
+    setLoading(false);
+  }
+},[authFetch,accessToken]);
+
+
+
 
  //✅ Initial data load - only when accessToken is available
   useEffect(() => {
     if (accessToken) {
-      const fetchData = async () => {  
-        await fetchUserRole();
+      const fetchData = async () => {   
+        await fetchTaxMaster() 
       };
       fetchData();
     }
@@ -229,10 +287,10 @@ const fetchUserRole= useCallback( async(skip = 0, limit = 10) => {
     console.log("AuthContext companyid:", companyid);
     if (companyid && accessToken) {
       console.log("Fetching UOMs with companyid:", companyid);
-        
-          fetchUserRole();
+               
+          fetchTaxMaster();
     }
-  }, [companyid, accessToken,fetchUserRole]);
+  }, [companyid, accessToken,fetchTaxMaster ]);
 
   return (
     <DataContext.Provider
@@ -250,7 +308,7 @@ const fetchUserRole= useCallback( async(skip = 0, limit = 10) => {
         loading,
         error,
         total,
-        companyid,busers,fetchUsers,userRole,fetchUserRole
+        companyid,busers,fetchUsers,userRole,fetchUserRole,finyr,fetchFinyr,taxmaster,fetchTaxMaster 
       }}
     >
       {children}

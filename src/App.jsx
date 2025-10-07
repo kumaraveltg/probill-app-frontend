@@ -17,6 +17,8 @@ import Currency from "../pages/Currency.jsx"
 import Login from "../pages/Login.jsx"
 import Users from "../pages/Users.jsx";
 import UserRole from "../pages/UserRole.jsx";
+import Finyr from "../pages/Finyr.jsx";
+import TaxMaster from "../pages/TaxMaster.jsx";
 
 
 
@@ -51,6 +53,8 @@ function App() {
               <Route path="currency" element={<Currency />} />
               <Route path="users" element={<Users />} />
               <Route path="userrole" element={<UserRole />} />
+              <Route path="finyr" element={<Finyr />} />
+              <Route path="taxmaster" element={<TaxMaster />} />
             </Route>
              {/* Default root goes to /login */}
             <Route path="/" element={<Navigate to="/login" replace />} />            

@@ -124,6 +124,21 @@ function Sidebar({ collapsed, setCollapsed }) {
                   UserRole
                 </Link>
               </li>
+               <li className="nav-item sidebar-subitem">
+                <Link className="nav-link text-light small p-1" to="finyr">
+                  Financial Year
+                </Link>
+              </li>
+              <li className="nav-item sidebar-subitem">
+                <Link className="nav-link text-light small p-1" to="taxmaster">
+                  Tax Master
+                </Link>
+              </li>
+              <li className="nav-item sidebar-subitem">
+                <Link className="nav-link text-light small p-1" to="items">
+                 Items
+                </Link>
+              </li>
             </ul>
           )}
         </li>

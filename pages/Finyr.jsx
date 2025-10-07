@@ -1,26 +1,25 @@
 import { useState,useContext,useEffect } from "react";
-import { FaPlus, FaSearch } from "react-icons/fa";
-import DataContext from "../context/DataContext";
+import { FaPlus, FaSearch } from "react-icons/fa"; 
 import { API_URL } from "../components/Config"; 
-import UomForm from "./UomForm.jsx";
+import FinyrForm  from "./FinyrForm.jsx";
 import { useNavigate } from "react-router-dom";
+import DataContext from "../context/DataContext.jsx";
 
-function Uom() {
-    const {uoms,fetchUoms,Loading,total,error} = useContext(DataContext);
+function Finyr() {
+    const {finyr,fetchFinyr,Loading,total,error} = useContext(DataContext);
     const [showForm,setShowForm]=useState(false);
     const [search,setSearch]= useState('');
     const [page,setPage]= useState(0);
-    const [uomObject,setUomObject]=useState();
+    const [finyrObject,setFinyrObject]=useState();
     const [limit,setLimit] = useState(10);
 
- const filteredUoms = uoms.filter(c =>
+ const filteredFinyr = finyr.filter(c =>
   [
     c.id,
-    c.uomcode,
-    c.uomname,
-    c.active ? "Yes" : "No",
-    c.companyid,
-    c.companyname,  
+    c.finyrname,
+    c.startdate,
+    c.enddate,
+    c.active ? "Yes" : "No",     
     c.createdby,
     c.modifiedby,
     c.createdon,
@@ -31,32 +30,32 @@ function Uom() {
   .includes(search.toLowerCase())
 );
 useEffect(() => {
-  fetchUoms(page * limit, limit);
+  fetchFinyr(page * limit, limit);
 }, [page,limit]);
 
 //New UOM 
 const handleNew = () => {
     setShowForm(true);
-    setUomObject(null);
+    setFinyrObject(null);
 };
 
-const handleUomSaved = () => {
-  fetchUoms(); // refresh list
+const handleSaved = () => {
+  fetchFinyr(); // refresh list
 };
 
 
 useEffect(()=>{ 
-uomObject && setShowForm(true); 
-},[uomObject])
+finyrObject && setShowForm(true); 
+},[finyrObject])
 
 const handleDelete = async(id) => {
- if (!window.confirm("Are you Sure Want to Delete this UOM?"))
+ if (!window.confirm("Are you Sure Want to Delete this Financial Year?"))
      return;
     try{
-    const res = await fetch(`${API_URL}/uomdelete/${id}`, 
+    const res = await fetch(`${API_URL}/${id}`, 
       { method: "DELETE" });
     if (res.ok) {
-        fetchUoms(page * limit, limit);
+        fetchFinyr(page * limit, limit);
     }   
     else {
         console.error("Failed to delete UOM");
@@ -68,8 +67,8 @@ const handleDelete = async(id) => {
     return (    
         <div className="container-fluid">
         <div className="d-flex justify-content-between align-items-center my-3">
-          <h2>Unit of Measurement (UOM)</h2>
-           
+          <h2>Financial Year</h2>
+         
         </div>  
         {!showForm ? (
         <>
@@ -94,17 +93,17 @@ const handleDelete = async(id) => {
             <div className="col-md-4 text-end">
                 <button className="btn btn-primary" onClick={handleNew}>
                 <FaPlus className="me-2" />
-                New UOM
+                New Financial Year
                 </button>
             </div>
             </div>
 <div style={{ maxHeight: "500px", overflowY: "auto" }}>   
 <table className="table table-bordered table-hover">        
 <thead className="table-light">
-<tr>
-<th>Company Name</th>
-<th>UOM Code</th>
-<th>UOM Name</th>   
+<tr> 
+<th>Finyear Name</th>
+<th>Start Date</th>   
+<th>End Date</th>  
 <th>Active</th>
 <th>Created By</th>
 <th>Created On</th> 
@@ -122,31 +121,31 @@ const handleDelete = async(id) => {
 <tr>
     <td colSpan="9" className="text-center text-danger">Error: {error}</td>     
 </tr>
-) : filteredUoms.length === 0 ? (
+) : filteredFinyr.length === 0 ? (
 <tr>    
-    <td colSpan="9" className="text-center">No UOMs found.</td>
+    <td colSpan="9" className="text-center">No Currency found.</td>
 </tr>
 ) : (    
-filteredUoms.map((uom) => ( 
-    <tr key={uom.id}>   
-        <td>{uom.companyname}</td>
-        <td>{uom.uomcode}</td>
-        <td>{uom.uomname}</td>  
-        <td>{uom.active ? "Yes" : "No"}</td>
-        <td>{uom.createdby}</td>
-        <td>{uom.createdon}</td> 
-        <td>{uom.modifiedby}</td>
-        <td>{uom.modifiedon}</td>
+filteredFinyr.map((fin) => ( 
+    <tr key={fin.id}>   
+        <td>{fin.finyrname}</td>
+        <td>{fin.startdate}</td>  
+        <td>{fin.enddate}</td>  
+        <td>{fin.active ? "Yes" : "No"}</td>
+        <td>{fin.createdby}</td>
+        <td>{fin.createdon}</td> 
+        <td>{fin.modifiedby}</td>
+        <td>{fin.modifiedon}</td>
         <td>
             <button 
                 className="btn btn-sm btn-primary me-2" 
-                onClick={() => setUomObject(uom)}
+                onClick={() => setFinyrObject(fin)}
             >
                 <i className="bi bi-pencil"></i> 
             </button>
             <button 
                 className="btn btn-sm btn-danger"
-                onClick={() => handleDelete(uom.id)}
+                onClick={() => handleDelete(fin.id)}
             >
                 <i className="bi bi-trash3"></i>
             </button>   
@@ -159,7 +158,7 @@ filteredUoms.map((uom) => (
 </div>
 <div className="d-flex justify-content-between align-items-center my-3"
 >    
-    <div>Total UOMs: {total}</div>
+    <div>Total Finacial Years: {total}</div>
    <label>
     Rows:
       <select
@@ -197,21 +196,21 @@ filteredUoms.map((uom) => (
 </div>
 </>     
         ) : (
-        <UomForm
-            uomObject={uomObject}
-            setUomObject={setUomObject}
+        <FinyrForm
+            finyrObject={finyrObject}
+            setFinyrObject={setFinyrObject}
             onClose={() => { setShowForm(false);
-                 setUomObject(null); 
-                 fetchUoms(page * limit, limit); }
+                 setFinyrObject(null); 
+                 fetchFinyr(page * limit, limit); }
                 }
-            fetchUoms={fetchUoms}
+            fetchFinyr={fetchFinyr}
             navigateToList={() => { setShowForm(false);
-                 setUomObject(null); 
-                 fetchUoms(page * limit, limit); }
+                 setFinyrObject(null); 
+                 fetchFinyr(page * limit, limit); }
                 }
             handleDelete={handleDelete}
             handleNew={handleNew} 
-            OnSaved={handleUomSaved}  
+            onSaved={handleSaved}  
             
         />
         )} 
@@ -219,4 +218,4 @@ filteredUoms.map((uom) => (
     );                
 
 }
-export default Uom;
+export default Finyr;

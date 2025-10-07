@@ -86,26 +86,36 @@ function Company() {
     <div className="container-fluid">
       <div className="d-flex justify-content-between align-items-center my-3">
         <h2>Company </h2>
-        <button className="btn btn-primary" onClick={handleNew}>
-          <FaPlus className="me-2" /> New Company
-        </button>
+        
       </div>
 
       {!showForm ? (
         <>
-          {/* Search input */}
-          <div className="input-group mb-3">
-            <span className="input-group-text bg-primary text-white">
-              <FaSearch />
-            </span>
-            <input
-              type="text"
-              className="form-control"
-              placeholder="Search Company..."
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-            />
-          </div>
+         <div className="row mb-3 align-items-center">
+            {/* Search box */}
+            <div className="col-md-8">
+                <div className="input-group">
+                <span className="input-group-text bg-primary text-white">
+                    <FaSearch />
+                </span>
+                <input
+                    type="text"
+                    className="form-control"
+                    placeholder="Search Tax..."
+                    value={search}
+                    onChange={(e) => setSearch(e.target.value)}
+                />
+                </div>
+            </div>
+
+            {/* Button */}
+            <div className="col-md-4 text-end">
+                <button className="btn btn-primary" onClick={handleNew}>
+                <FaPlus className="me-2" />
+                New Company
+                </button>
+            </div>
+            </div>
 
           {/* Company table */}
           <div style={{ maxHeight: "500px", overflowY: "auto" }}>

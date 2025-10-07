@@ -1,7 +1,7 @@
 import { useEffect, useContext } from "react";
 import { AuthContext } from "../context/AuthContext"
 
-const INACTIVITY_LIMIT = 5 * 60 * 1000; // 15 minutes
+const INACTIVITY_LIMIT = 15 * 60 * 1000; // 15 minutes
 const WARNING_TIME = 4 * 60 * 1000; // 2 min before timeout
 
 export const useSessionTimeout = () => {

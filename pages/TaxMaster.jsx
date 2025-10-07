@@ -2,61 +2,62 @@ import { useState,useContext,useEffect } from "react";
 import { FaPlus, FaSearch } from "react-icons/fa";
 import DataContext from "../context/DataContext";
 import { API_URL } from "../components/Config"; 
-import UomForm from "./UomForm.jsx";
+import TaxMasterForm from "./TaxMasterForm.jsx";
 import { useNavigate } from "react-router-dom";
 
-function Uom() {
-    const {uoms,fetchUoms,Loading,total,error} = useContext(DataContext);
+function TaxMaster() {
+    const {taxmaster,fetchTaxMaster,Loading,total,error} = useContext(DataContext);
     const [showForm,setShowForm]=useState(false);
     const [search,setSearch]= useState('');
     const [page,setPage]= useState(0);
-    const [uomObject,setUomObject]=useState();
+    const [taxObject,setTaxObject]=useState();
     const [limit,setLimit] = useState(10);
 
- const filteredUoms = uoms.filter(c =>
+ const filteredTax = taxmaster.filter(c =>
   [
     c.id,
-    c.uomcode,
-    c.uomname,
+    c.taxname,
+    c.taxtype,
+    c.taxrate,
     c.active ? "Yes" : "No",
     c.companyid,
     c.companyname,  
     c.createdby,
     c.modifiedby,
     c.createdon,
-    c.modifiedon
+    c.modifiedon,
   ]
   .join(" ")
   .toLowerCase()
   .includes(search.toLowerCase())
 );
 useEffect(() => {
-  fetchUoms(page * limit, limit);
+  fetchTaxMaster(page * limit, limit);
 }, [page,limit]);
 
 //New UOM 
 const handleNew = () => {
     setShowForm(true);
-    setUomObject(null);
+    setTaxObject(null);
 };
 
-const handleUomSaved = () => {
-  fetchUoms(); // refresh list
+const handleTaxSaved = () => {
+  fetchTaxMaster(); // refresh list
 };
 
 
 useEffect(()=>{ 
-uomObject && setShowForm(true); 
-},[uomObject])
+taxObject && setShowForm(true); 
+},[taxObject])
 
 const handleDelete = async(id) => {
- if (!window.confirm("Are you Sure Want to Delete this UOM?"))
+ if (!window.confirm("Are you Sure Want to Delete this Taxmaster?"))
      return;
     try{
-    const res = await fetch(`${API_URL}/uomdelete/${id}`, 
+    const res = await fetch(`${API_URL}/deletetax/${id}`, 
       { method: "DELETE" });
     if (res.ok) {
-        fetchUoms(page * limit, limit);
+        fetchTaxMaster(page * limit, limit);
     }   
     else {
         console.error("Failed to delete UOM");
@@ -68,8 +69,7 @@ const handleDelete = async(id) => {
     return (    
         <div className="container-fluid">
         <div className="d-flex justify-content-between align-items-center my-3">
-          <h2>Unit of Measurement (UOM)</h2>
-           
+          <h2>TaxMaster</h2>          
         </div>  
         {!showForm ? (
         <>
@@ -94,59 +94,62 @@ const handleDelete = async(id) => {
             <div className="col-md-4 text-end">
                 <button className="btn btn-primary" onClick={handleNew}>
                 <FaPlus className="me-2" />
-                New UOM
+                New TaxMaster
                 </button>
             </div>
             </div>
-<div style={{ maxHeight: "500px", overflowY: "auto" }}>   
-<table className="table table-bordered table-hover">        
-<thead className="table-light">
-<tr>
-<th>Company Name</th>
-<th>UOM Code</th>
-<th>UOM Name</th>   
-<th>Active</th>
-<th>Created By</th>
-<th>Created On</th> 
-<th>Modified By</th>
-<th>Modified On</th>
-<th>Actions</th>
-</tr>   
-</thead>
-<tbody>
-{Loading ? (    
-<tr>
-    <td colSpan="9" className="text-center">Loading...</td>
-</tr>   
-) : error ? (
-<tr>
-    <td colSpan="9" className="text-center text-danger">Error: {error}</td>     
-</tr>
-) : filteredUoms.length === 0 ? (
-<tr>    
-    <td colSpan="9" className="text-center">No UOMs found.</td>
-</tr>
+            
+            <div style={{ maxHeight: "500px", overflowY: "auto" }}>   
+            <table className="table table-bordered table-hover">        
+            <thead className="table-light">
+            <tr>
+            <th>Company Name</th>
+            <th>Tax Name </th>
+            <th>Tax Type</th>   
+            <th>Tax Rate</th>
+            <th>Active</th>
+            <th>Created By</th>
+            <th>Created On</th> 
+            <th>Modified By</th>
+            <th>Modified On</th>
+            <th>Actions</th>
+            </tr>   
+            </thead>
+            <tbody>
+            {Loading ? (    
+            <tr>
+                <td colSpan="9" className="text-center">Loading...</td>
+            </tr>   
+            ) : error ? (
+            <tr>
+                <td colSpan="9" className="text-center text-danger">Error: {error}</td>     
+            </tr>
+            ) : filteredTax.length === 0 ? (
+            <tr>    
+                <td colSpan="9" className="text-center">No Tax found.</td>
+            </tr>
 ) : (    
-filteredUoms.map((uom) => ( 
-    <tr key={uom.id}>   
-        <td>{uom.companyname}</td>
-        <td>{uom.uomcode}</td>
-        <td>{uom.uomname}</td>  
-        <td>{uom.active ? "Yes" : "No"}</td>
-        <td>{uom.createdby}</td>
-        <td>{uom.createdon}</td> 
-        <td>{uom.modifiedby}</td>
-        <td>{uom.modifiedon}</td>
+filteredTax.map((tax) => ( 
+    <tr key={tax.id}>   
+        <td>{tax.companyname}</td>
+        <td>{tax.taxname}</td>
+        <td>{tax.taxtype}</td>  
+        <td>{tax.taxrate}</td>  
+        <td>{tax.active ? "Yes" : "No"}</td>
+        <td>{tax.createdby}</td>
+        <td>{tax.createdon ? new Date(tax.createdon).toLocaleString() : ""}</td>
+        <td>{tax.modifiedby}</td>         
+        <td>{tax.modifiedon ? new Date(tax.modifiedon).toLocaleString() : ""}</td>
         <td>
             <button 
                 className="btn btn-sm btn-primary me-2" 
-                onClick={() => setUomObject(uom)}
+                onClick={() => setTaxObject(tax)}
             >
                 <i className="bi bi-pencil"></i> 
             </button>
             <button 
                 className="btn btn-sm btn-danger"
-                onClick={() => handleDelete(uom.id)}
+                onClick={() => handleDelete(tax.id)}
             >
                 <i className="bi bi-trash3"></i>
             </button>   
@@ -159,7 +162,7 @@ filteredUoms.map((uom) => (
 </div>
 <div className="d-flex justify-content-between align-items-center my-3"
 >    
-    <div>Total UOMs: {total}</div>
+    <div>Total Taxs: {total}</div>
    <label>
     Rows:
       <select
@@ -189,34 +192,31 @@ filteredUoms.map((uom) => (
         <button
             className="btn btn-secondary ms-2"
             onClick={() => setPage((p) => (total > (p + 1) * limit ? p + 1 : p))}
-            disabled={(page + 1) * limit >= total}
-        >
+            disabled={(page + 1) * limit >= total}>
             Next
         </button>
     </div>
 </div>
 </>     
         ) : (
-        <UomForm
-            uomObject={uomObject}
-            setUomObject={setUomObject}
+        <TaxMasterForm
+            taxObject={taxObject}
+            setTaxObject={setTaxObject}
             onClose={() => { setShowForm(false);
-                 setUomObject(null); 
-                 fetchUoms(page * limit, limit); }
+                 setTaxObject(null); 
+                 fetchTaxMaster(page * limit, limit); }
                 }
-            fetchUoms={fetchUoms}
+            fetchTaxMaster={fetchTaxMaster}
             navigateToList={() => { setShowForm(false);
-                 setUomObject(null); 
-                 fetchUoms(page * limit, limit); }
+                 setTaxObject(null); 
+                 fetchTaxMaster(page * limit, limit); }
                 }
             handleDelete={handleDelete}
-            handleNew={handleNew} 
-            OnSaved={handleUomSaved}  
-            
+            //handleNew={handleNew} 
+            OnSaved={handleTaxSaved}              
         />
         )} 
         </div>    
-    );                
-
+    );     
 }
-export default Uom;
+export default TaxMaster;
