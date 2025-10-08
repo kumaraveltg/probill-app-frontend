@@ -17,6 +17,8 @@ export const DataProvider = ({ children }) => {
   const [userRole,setUserRole]= useState([]);
   const [finyr,setFinyr] = useState([]);
   const [taxmaster,setTaxMaster]= useState([]); 
+  const [items,setItems]=useState([])
+  const [test,setTest]= useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const limit = 10;
@@ -268,13 +270,37 @@ const fetchTaxMaster= useCallback( async(skip= 0, limit = 10) => {
 },[authFetch,accessToken]);
 
 
+const fetchItems= useCallback( async(skip=0,limit=100) => {
+  if(!companyid) {
+    console.error("Company Id is not avaialble");
+    return;
+  }
+  console.log("AccessToken",accessToken);
+  try{
+    setLoading(true);
+    const res= await authFetch(`${API_URL}/products/${companyid}?skip=${skip}&limit=${limit}`,
+      { headers: {"Authorization": `Bearer ${accessToken}`}
+    } );
+    if(!res.ok) throw new Error(`HTTP Error ${res.status}`);
+    const data = await res.json();
+    console.log("Fetch Products Data:",data);
+    setItems(data.productlist||[]);
+    setTotal(data.total||0);
+  }
+  catch(err){
+    setError(err.message);
 
+  }
+  finally{
+    setLoading(false);
+  }
+},[companyid,authFetch,accessToken])
 
  //✅ Initial data load - only when accessToken is available
   useEffect(() => {
     if (accessToken) {
       const fetchData = async () => {   
-        await fetchTaxMaster() 
+        await fetchItems() 
       };
       fetchData();
     }
@@ -283,14 +309,14 @@ const fetchTaxMaster= useCallback( async(skip= 0, limit = 10) => {
 
 
   // ✅ Fetch UOMs when companyid becomes available
-  useEffect(() => {
-    console.log("AuthContext companyid:", companyid);
-    if (companyid && accessToken) {
-      console.log("Fetching UOMs with companyid:", companyid);
+  // useEffect(() => {
+  //   console.log("AuthContext companyid:", companyid);
+  //   if (companyid && accessToken) {
+  //     console.log("Fetching UOMs with companyid:", companyid);
                
-          fetchTaxMaster();
-    }
-  }, [companyid, accessToken,fetchTaxMaster ]);
+  //         fetchTaxMaster();
+  //   }
+  // }, [companyid, accessToken,fetchTaxMaster ]);
 
   return (
     <DataContext.Provider
@@ -308,12 +334,21 @@ const fetchTaxMaster= useCallback( async(skip= 0, limit = 10) => {
         loading,
         error,
         total,
-        companyid,busers,fetchUsers,userRole,fetchUserRole,finyr,fetchFinyr,taxmaster,fetchTaxMaster 
+        companyid,busers,fetchUsers,userRole,fetchUserRole,finyr,fetchFinyr,taxmaster,fetchTaxMaster,
+        items,fetchItems,test 
       }}
     >
       {children}
     </DataContext.Provider>
   );
+};
+// ✅ ADD THIS CUSTOM HOOK
+export const useData = () => {
+  const context = useContext(DataContext);
+  if (!context) {
+    throw new Error('useData must be used within a DataProvider');
+  }
+  return context;
 };
 
 export default DataContext;

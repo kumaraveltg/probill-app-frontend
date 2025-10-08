@@ -204,7 +204,7 @@ function CityForm({ cityValueEdit, onClose, onSaved, navigateToList, handleDelet
       modifiedby: "Admin",
     });
     } else {
-      alert("No state selected to delete!");
+      alert("No City selected to delete!");
     }
   };  
      

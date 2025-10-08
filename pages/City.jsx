@@ -169,14 +169,14 @@
               {citys.length === 0 && (
                 <tr>
                   <td colSpan="8" className="text-center">
-                    No States found
+                    No Cities found
                   </td>
                 </tr>
               )}
                 {filteredCities.length === 0 && (
                 <tr>
                   <td colSpan="8" className="text-center">
-                    No matching States found
+                    No matching Cities found
                   </td>
                 </tr>
               )}

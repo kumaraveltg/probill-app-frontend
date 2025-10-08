@@ -139,6 +139,11 @@ function Sidebar({ collapsed, setCollapsed }) {
                  Items
                 </Link>
               </li>
+              <li className="nav-item sidebar-subitem">
+                <Link className="nav-link text-light small p-1" to="test">
+                 Test
+                </Link>
+              </li>
             </ul>
           )}
         </li>

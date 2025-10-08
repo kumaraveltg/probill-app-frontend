@@ -19,6 +19,8 @@ import Users from "../pages/Users.jsx";
 import UserRole from "../pages/UserRole.jsx";
 import Finyr from "../pages/Finyr.jsx";
 import TaxMaster from "../pages/TaxMaster.jsx";
+import Items from "../pages/Items.jsx";
+import Test from  "../pages/Test.jsx"
 
 
 
@@ -55,6 +57,8 @@ function App() {
               <Route path="userrole" element={<UserRole />} />
               <Route path="finyr" element={<Finyr />} />
               <Route path="taxmaster" element={<TaxMaster />} />
+              <Route path="items" element={<Items />} />
+              <Route path="test" element={<Test />} />
             </Route>
              {/* Default root goes to /login */}
             <Route path="/" element={<Navigate to="/login" replace />} />            
