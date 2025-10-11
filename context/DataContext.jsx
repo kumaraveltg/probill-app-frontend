@@ -19,6 +19,9 @@ export const DataProvider = ({ children }) => {
   const [taxmaster,setTaxMaster]= useState([]); 
   const [items,setItems]=useState([])
   const [test,setTest]= useState([]);
+  const [hsn,setHsn]= useState([]);
+  const [customer,setCustomer]= useState([])
+  const [currencies, setCurrencies] = useState([]); 
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const limit = 10;
@@ -296,19 +299,85 @@ const fetchItems= useCallback( async(skip=0,limit=100) => {
   }
 },[companyid,authFetch,accessToken])
 
+const fetchHsn = useCallback(async(skip=0,limit=100) => {   
+  if(!companyid) {
+    console.error("Company Id is not avaialble");
+    return;
+  }
+  console.log("AccessToken",accessToken);
+  try{
+    setLoading(true);
+    const res= await authFetch(`${API_URL}/hsn/${companyid}?skip=${skip}&limit=${limit}`,
+      { headers: {"Authorization": `Bearer ${accessToken}`}
+    } );
+    if(!res.ok) throw new Error(`HTTP Error ${res.status}`);
+    const data = await res.json();
+    console.log("Fetch HSN Data:",data);
+    setHsn(data.hsnlist||[]);
+    setTotal(data.total||0);
+  }
+  catch(err){
+    setError(err.message);
+
+  }
+  finally{
+    setLoading(false);
+  }
+},[companyid,authFetch,accessToken])
+
+const fetchCustomer = useCallback(async(skip=0,limit=50) => {   
+  if(!companyid) {
+    console.error("Company Id is not avaialble");
+    return;
+  }
+  console.log("AccessToken",accessToken);
+  try{
+    setLoading(true);
+    const res= await authFetch(`${API_URL}/getcustomer/${companyid}?skip=${skip}&limit=${limit}`,
+      { headers: {"Authorization": `Bearer ${accessToken}`}
+    } );
+    if(!res.ok) throw new Error(`HTTP Error ${res.status}`);
+    const data = await res.json();
+    console.log("Fetch Customer Data:",data);
+    setCustomer(data.customer_list||[]);
+    setTotal(data.total||0);
+  }
+  catch(err){
+    setError(err.message);
+
+  }
+  finally{
+    setLoading(false);
+  }
+},[companyid,authFetch,accessToken])
+
+ // fetch countries
+  const fetchCurrencies = async (skip=0,limit=10) => {
+    try {
+      setLoading(true);
+      const res = await fetch(`${API_URL}/currency/getcurrency/?skip=${skip}&limit=${limit}`);
+      if (!res.ok) throw new Error(`HTTP Error ${res.status}`);
+      const data = await res.json();
+      setCurrencies(data.currency_list);
+      setTotal(data.total || 0);
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
  //✅ Initial data load - only when accessToken is available
   useEffect(() => {
     if (accessToken) {
       const fetchData = async () => {   
-        await fetchItems() 
-      };
+        await fetchCustomer(0, 50); 
+      }; 
       fetchData();
     }
-  }, [accessToken]);
+  }, [accessToken,fetchCustomer ]);
 
-
-
-  // ✅ Fetch UOMs when companyid becomes available
+ // ✅ Fetch UOMs when companyid becomes available
   // useEffect(() => {
   //   console.log("AuthContext companyid:", companyid);
   //   if (companyid && accessToken) {
@@ -317,6 +386,7 @@ const fetchItems= useCallback( async(skip=0,limit=100) => {
   //         fetchTaxMaster();
   //   }
   // }, [companyid, accessToken,fetchTaxMaster ]);
+
 
   return (
     <DataContext.Provider
@@ -335,7 +405,7 @@ const fetchItems= useCallback( async(skip=0,limit=100) => {
         error,
         total,
         companyid,busers,fetchUsers,userRole,fetchUserRole,finyr,fetchFinyr,taxmaster,fetchTaxMaster,
-        items,fetchItems,test 
+        items,fetchItems,test,hsn,fetchHsn,customer,fetchCustomer,currencies,fetchCurrencies
       }}
     >
       {children}

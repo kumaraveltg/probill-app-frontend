@@ -2,8 +2,7 @@ import React from "react";
 import { useContext } from "react";
 import { AuthContext } from "../context/AuthContext.jsx";
 import { BrowserRouter as Router , Routes, Route} from "react-router-dom";
-import { DataProvider }  from '../context/DataContext'; 
-import { DataCurrencyProvider } from "../context/DataCurrency";
+import { DataProvider }  from '../context/DataContext';  
 import {  AuthProvider } from "../context/AuthContext.jsx";
 import { Navigate } from "react-router-dom";
 import { useSessionTimeout } from "../hooks/useSessonTimeout.jsx"; 
@@ -21,7 +20,8 @@ import Finyr from "../pages/Finyr.jsx";
 import TaxMaster from "../pages/TaxMaster.jsx";
 import Items from "../pages/Items.jsx";
 import Test from  "../pages/Test.jsx"
-
+import Hsn from "../pages/Hsn.jsx";
+import Customer from "../pages/Customer.jsx";
 
 
 // Protected route component
@@ -40,8 +40,7 @@ function App() {
   return (
     <Router>
     <AuthProvider>
-      <DataProvider>
-        <DataCurrencyProvider>
+      <DataProvider> 
           <Routes>
           {/* Public route */}           
           <Route path="/login" element={<Login />} />
@@ -59,13 +58,14 @@ function App() {
               <Route path="taxmaster" element={<TaxMaster />} />
               <Route path="items" element={<Items />} />
               <Route path="test" element={<Test />} />
+              <Route path="hsn" element={<Hsn />} />
+              <Route path="customer" element={<Customer />} />
             </Route>
              {/* Default root goes to /login */}
             <Route path="/" element={<Navigate to="/login" replace />} />            
             {/* Catch-all route to redirect unknown paths */}
               <Route path="*" element={<Navigate to="/login" replace />} />
-          </Routes>
-        </DataCurrencyProvider>
+          </Routes> 
       </DataProvider>
     </AuthProvider>
     </Router>

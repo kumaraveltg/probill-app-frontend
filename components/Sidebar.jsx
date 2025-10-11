@@ -143,6 +143,16 @@ function Sidebar({ collapsed, setCollapsed }) {
                 <Link className="nav-link text-light small p-1" to="test">
                  Test
                 </Link>
+                </li>
+                <li className="nav-item sidebar-subitem">
+                <Link className="nav-link text-light small p-1" to="hsn">
+                 HSN
+                </Link>
+              </li>
+              <li className="nav-item sidebar-subitem">
+                <Link className="nav-link text-light small p-1" to="customer">
+                 Customer
+                </Link>
               </li>
             </ul>
           )}

@@ -2,11 +2,10 @@ import { useState, useEffect, useContext } from "react";
 import { FaSave, FaTimes } from "react-icons/fa";
 import DataContext from "../context/DataContext";
 import { API_URL } from "../components/Config";
-import SearchModal from "../components/SearchModal";
-import DataCurrency from "../context/DataCurrency";
+import SearchModal from "../components/SearchModal"; 
 
 function CurrencyForm({ onClose,onSaved, currencyObject,setCurrencyObject,navigateToList,handleDelete }) {
-  const { fetchCurrencies, currencies } = useContext(DataCurrency);
+  const { fetchCurrencies, currencies } = useContext(DataContext);
   const [selectedUom, setSelectedUom] = useState(currencyObject || null);
   const [formData, setFormData] = useState({
     id: null,     

@@ -23,7 +23,7 @@ function ItemsForm({ onClose,onSaved, itemsObject,setItemsObject,navigateToList,
     puom:"",
     hsncode:"",
     taxmasterid:0, 
-    taxname:"",
+    taxname:0,
     taxrate:0,
     selling_price:0,
     cost_price:0,
@@ -34,11 +34,7 @@ function ItemsForm({ onClose,onSaved, itemsObject,setItemsObject,navigateToList,
   const [showModal, setShowModal] = useState(false);
   const [isEdit, setIsEdit] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [message, setMessage] = useState("");
-  const fallbackParams = JSON.parse(localStorage.getItem("globalParams") || "{}");
-  const uname = ctxUsername || fallbackParams.username || "admin";
-  const cid = defaultcompanyid || fallbackParams.companyid || null;
-  const cno = defaultCompanyno || fallbackParams.companyno || ""; 
+  const [message, setMessage] = useState("");  
   const{uoms,fetchUoms,taxmaster,fetchTaxMaster} = useData();
   const [selectedTax, setSelectedTax] = useState('');
   const [selectedUom, setSelectedUom] = useState('');
@@ -59,8 +55,7 @@ function ItemsForm({ onClose,onSaved, itemsObject,setItemsObject,navigateToList,
   }, [uoms]);
 
   console.log("uomOptions:", uomOptions);
- console.log("formData.selling_uom:", formData.selling_uom);
- console.log("itemsObject.selling_uom:", itemsObject.selling_uom);
+ console.log("formData.selling_uom:", formData.selling_uom); 
  
    const taxOptions = useMemo(() => {
     return taxmaster.map((tm) => ({
@@ -70,7 +65,11 @@ function ItemsForm({ onClose,onSaved, itemsObject,setItemsObject,navigateToList,
     }));
   }, [taxmaster]);
 
-   
+  const fallbackParams = JSON.parse(localStorage.getItem("globalParams") || "{}");
+  const uname = ctxUsername || fallbackParams.username || "admin";
+  const cid = defaultcompanyid || fallbackParams.companyid || null;
+  const cno = defaultCompanyno || fallbackParams.companyno || ""; 
+  console.log(fallbackParams.username);
 
   const resetForm = () => {
   let defaultCompanyName = "Default Company";
@@ -81,7 +80,7 @@ function ItemsForm({ onClose,onSaved, itemsObject,setItemsObject,navigateToList,
     );
     console.log("Matched company:", match);
     if (match) {
-      defaultCompanyName = match.companyname;
+      defaultCompanyName = match.companyname; 
     }
   }
 
@@ -99,13 +98,13 @@ function ItemsForm({ onClose,onSaved, itemsObject,setItemsObject,navigateToList,
     puom: "",
     hsncode: "",
     taxmasterid:0,
-    taxname: "",
+    taxname: null,
     taxrate: 0,
     selling_price: 0,
     cost_price: 0,
     active: true,
-    createdby: "uname",
-    modifiedby: "uname",
+    createdby: uname,
+    modifiedby: uname,
   });
 
   setIsEdit(false);
@@ -118,7 +117,7 @@ useEffect(() => {
       ...itemsObject,
       selling_uom:  itemsObject.selling_uom  || null,
       purchase_uom:  itemsObject.purchase_uom  || null,
-      taxname:  itemsObject.taxmasterid  || null,
+      taxname:  itemsObject.taxname  || null,
     });
     setIsEdit(true);
   } else if (itemsObject === null || itemsObject === undefined) {
@@ -355,8 +354,8 @@ useEffect(() => {
             options={taxOptions}
             value={taxOptions.find(opt => opt.value === formData?.taxname) || null}
             onChange={(selectedTax) =>
-                setFormData({ ...formData, taxname: selectedTax?.value ||"",
-                    taxrate: selectedTax?.ttaxrate || 0
+                setFormData({ ...formData, taxname: selectedTax?.value,
+                    taxrate: selectedTax?.ttaxrate
                  })
             }
             placeholder="-- Select Tax Name--"
@@ -397,7 +396,7 @@ useEffect(() => {
       searchFields={searchFields}
         onSelect={(i) => {
         setFormData({ ...i }); // update form
-        setItemsObject(i);       // important: now delete knows what to delete
+        setItemsObject(i);      
         setIsEdit(true);
         setShowModal(false);
         }}

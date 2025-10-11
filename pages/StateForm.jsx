@@ -34,15 +34,7 @@ import { useMemo } from "react";
       })),
     [countries]
   );
-    // const handleSave = () => {
-    //   const newState = {
-    //     id: Date.now(),       // temp id
-    //     statename: tempState, // from input
-         
-    //   };
-
-    //   onSaved(newState); // 🔗 pass to CityForm
-    // };
+     
 
   // ✅ Initialize form when editing
   useEffect(() => {

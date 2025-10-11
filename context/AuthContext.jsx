@@ -100,37 +100,37 @@
 
       return res;
     };
-
-  const global_params = async (usernameInput,companynoInput) => {
-   try {
-       const res = await fetch(`${API_URL}/set_globalparams`,{
-         method: "POST",
-         headers: {"Content-Type": "application/json"},
-         body: JSON.stringify({ username: usernameInput, companyno: companynoInput})
-       }   );
-       const data = await res.json();
-       const params = data.params || {};
+  // this portion is available in login page
+  // const global_params = async (usernameInput,companynoInput) => {
+  //  try {
+  //      const res = await fetch(`${API_URL}/set_globalparams`,{
+  //        method: "POST",
+  //        headers: {"Content-Type": "application/json"},
+  //        body: JSON.stringify({ username: usernameInput, companyno: companynoInput})
+  //      }   );
+  //      const data = await res.json();
+  //      const params = data.params || {};
       
-       if(!res.ok) throw new Error( data.detail||"globalparams failed");
-        setUsername(params.username);
-        setCompanycode(params.companycode);
-        setCompanyid(params.companyid);
-        setCompanyno(params.companyno);
+  //      if(!res.ok) throw new Error( data.detail||"globalparams failed");
+  //       setUsername(params.username);
+  //       setCompanycode(params.companycode);
+  //       setCompanyid(params.companyid);
+  //       setCompanyno(params.companyno);
 
-         // also save in localStorage (optional persistence)
-        localStorage.setItem("username", params.username);
-        localStorage.setItem("companyid", params.companyid);
-        localStorage.setItem("companyno", params.companyno);
-        localStorage.setItem("companycode", params.companycode);
+  //        // also save in localStorage (optional persistence)
+  //       localStorage.setItem("username", params.username);
+  //       localStorage.setItem("companyid", params.companyid);
+  //       localStorage.setItem("companyno", params.companyno);
+  //       localStorage.setItem("companycode", params.companycode);
         
-         console.log("globalparams Data:",params);
+  //        console.log("globalparams Data:",params);
 
-       return params;
-   }
-   catch (err){
-    console.error("Error Globalparams",err.message);
+  //      return params;
+  //  }
+  //  catch (err){
+  //   console.error("Error Globalparams",err.message);
 
-   }}
+  //  }}
      
   useEffect(() => {
     if (accessToken) localStorage.setItem("accessToken", accessToken);
@@ -154,8 +154,7 @@
           username, setUsername,
           companyno, setCompanyno,
           companyid, setCompanyid,
-          companycode, setCompanycode,
-          global_params
+          companycode, setCompanycode, 
         }}
       >
         {children}

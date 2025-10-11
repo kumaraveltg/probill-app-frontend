@@ -19,14 +19,16 @@ function SearchModal({ show, onClose, apiUrl, columns, searchFields, onSelect })
 
       // Build API query
       const url = `${apiUrl}?field=${field}&value=${encodeURIComponent(search)}`;
-       console.log("SearchModal API URL:", url);
+       console.log("SearchModal API URL:", url);        
       fetch(url)
         .then((res) => res.json())
         .then((resData) => {
+          console.log("API Response Data:", resData); 
           setData(resData);
           setLoading(false);
-        })
-        .catch((err) => {
+        } 
+      )
+          .catch((err) => {
           console.error("Error fetching data:", err);
           setLoading(false);
         });

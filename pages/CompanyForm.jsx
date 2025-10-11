@@ -1,16 +1,16 @@
 import { useState, useEffect, useContext, useMemo } from "react";
 import { FaSave, FaTimes } from "react-icons/fa";
 import { API_URL } from "../components/Config";
-import SearchModal from "../components/SearchModal"; 
-import DataCurrency from "../context/DataCurrency";
+import SearchModal from "../components/SearchModal";  
 import Select from "react-select";  
 import Company from "./Company";
 import { AuthContext } from "../context/AuthContext";
+import DataContext from "../context/DataContext";
 
 
 
 function CompanyForm({ onClose,onSaved, companyObject,navigateToList }) {
-  const {  currencies} = useContext(DataCurrency); 
+  const {  currencies} = useContext(DataContext); 
   const {accessToken,fetchAuth} = useContext(AuthContext)
   const [formData, setFormData] = useState({
     id: null,
