@@ -130,3 +130,10 @@ label.required::after {
   overflow-x: hidden;  /* prevent horizontal scroll */
   transition: margin-left 0.3s;
 }
+
+.w-50 { width: 50px; }
+.w-100 { width: 100px; }
+.w-150 { width: 150px; }
+.w-200 { width: 200px; }
+.w-300 {width: 300px;}
+.w-400 {width: 400px;}

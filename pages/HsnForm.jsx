@@ -261,8 +261,7 @@ function HsnForm({ onClose,onSaved, hsnObject,setHsnObject,navigateToList,handle
             }
             placeholder="-- Select Tax Name--"
             isClearable
-            isSearchable     
-            styles={{width:"100px"}}      
+            isSearchable    
             />  
           </div> 
           <div className="col-md-3">

@@ -1,66 +1,104 @@
-  import { createContext, useEffect, useState } from "react";
-  import { API_URL } from "../components/Config";
+import { createContext, useEffect, useState } from "react";
+import { API_URL } from "../components/Config";
 
-  export const AuthContext = createContext();
+export const AuthContext = createContext();
 
-  export const AuthProvider = ({ children }) => {
-    // Tonen Genereation
-    const [accessToken, setAccessToken] = useState(localStorage.getItem("accessToken") || null);
-    const [refreshToken, setRefreshToken] = useState(localStorage.getItem("refreshToken") || null);
-    //global params
-    const [username,setUsername] = useState(localStorage.getItem("username")||null);
-    const [companyno,setCompanyno] = useState(localStorage.getItem("companyno")||null);
-    const [companyid,setCompanyid]= useState(localStorage.getItem("companyid")||null);
-    const [companycode,setCompanycode] = useState(localStorage.getItem("companycode")||null)
-    
-    
-    const saveAccessToken = (token) => {
-      setAccessToken(token);
-      if (token) localStorage.setItem("accessToken", token);
-      else localStorage.removeItem("accessToken");
-    };
+export const AuthProvider = ({ children }) => {
+  // Tokens
+  const [accessToken, setAccessToken] = useState(localStorage.getItem("accessToken") || null);
+  const [refreshToken, setRefreshToken] = useState(localStorage.getItem("refreshToken") || null);
 
-    const saveRefreshToken = (token) => {
-      setRefreshToken(token);
-      if (token) localStorage.setItem("refreshToken", token);
-      else localStorage.removeItem("refreshToken");
-    };
+  // Global params
+  const [username, setUsername] = useState(localStorage.getItem("username") || null);
+  const [companyno, setCompanyno] = useState(localStorage.getItem("companyno") || null);
+  const [companyid, setCompanyid] = useState(localStorage.getItem("companyid") || null);
+  const [companycode, setCompanycode] = useState(localStorage.getItem("companycode") || null);
+  const [companyname, setCompanyname] = useState(localStorage.getItem("companyname") || null);
 
-    const jwttoken = async (project, companyno, username, password) => {
-  try {
-    const res = await fetch(`${API_URL}/login`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ project, companyno, username, password }),
-    });
+  // --- TOKEN HELPERS ---
+  const saveAccessToken = (token) => {
+    setAccessToken(token);
+    token ? localStorage.setItem("accessToken", token) : localStorage.removeItem("accessToken");
+  };
 
-    const data = await res.json();
-    console.log("Login API response:", data);
+  const saveRefreshToken = (token) => {
+    setRefreshToken(token);
+    token ? localStorage.setItem("refreshToken", token) : localStorage.removeItem("refreshToken");
+  };
 
-    if (!res.ok) throw new Error(data.detail || "Login failed");
+  // --- LOGIN TOKEN GENERATION ---
+  const jwttoken = async (project, companyno, username, password) => {
+    try {
+      const res = await fetch(`${API_URL}/login`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ project, companyno, username, password }),
+      });
 
-    saveAccessToken(data.access_token);
-    saveRefreshToken(data.refresh_token);
-   
+      const data = await res.json();
+      console.log("Login API response:", data);
 
-  } catch (err) {
-    console.error("Login error:", err.message);
-  }
-};
+      if (!res.ok) throw new Error(data.detail || "Login failed");
 
+      saveAccessToken(data.access_token);
+      saveRefreshToken(data.refresh_token);
+
+    } catch (err) {
+      console.error("Login error:", err.message);
+    }
+  };
+
+  // --- FETCH GLOBAL PARAMS (after login) ---
+  const globalParams = async (usernameInput, companynoInput) => {
+    try {
+      const res = await fetch(`${API_URL}/set_globalparams`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ username: usernameInput, companyno: companynoInput }),
+      });
+
+      const data = await res.json();
+      const params = data.params || {};
+
+      if (!res.ok) throw new Error(data.detail || "Global params fetch failed");
+
+      // Set all
+      setUsername(params.username);
+      setCompanycode(params.companycode);
+      setCompanyid(params.companyid);
+      setCompanyno(params.companyno);
+      setCompanyname(params.companyname);
+
+      // Persist
+      localStorage.setItem("username", params.username);
+      localStorage.setItem("companycode", params.companycode);
+      localStorage.setItem("companyid", params.companyid);
+      localStorage.setItem("companyno", params.companyno);
+      localStorage.setItem("companyname", params.companyname);
+
+      console.log("Global params loaded:", params);
+      return params;
+    } catch (err) {
+      console.error("Error fetching global params:", err.message);
+    }
+  };
+
+  // --- LOGOUT ---
   const logout = () => {
-      setAccessToken(null);
-      setRefreshToken(null);
-      setUsername(null);
-      localStorage.removeItem("accessToken");
-      localStorage.removeItem("refreshToken");
-      localStorage.removeItem("user");
+    setAccessToken(null);
+    setRefreshToken(null);
+    setUsername(null);
+    setCompanyno(null);
+    setCompanyid(null);
+    setCompanycode(null);
+    setCompanyname(null);
 
-      // Redirect to login page
-      window.location.href = "/login";
-    };
+    localStorage.clear();
+    window.location.href = "/login";
+  };
 
-    const authFetch = async (url, options = {}) => {
+  // --- AUTH FETCH (auto refresh) ---
+  const authFetch = async (url, options = {}) => {
     const finalOptions = {
       ...options,
       headers: {
@@ -71,10 +109,8 @@
 
     let res = await fetch(url, finalOptions);
 
-    // if 401 (token expired) and refreshToken exists
     if (res.status === 401 && refreshToken) {
       console.log("Access token expired. Trying refresh token...");
-
       const refreshRes = await fetch(`${API_URL}/refresh`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -83,12 +119,8 @@
 
       if (refreshRes.ok) {
         const refreshData = await refreshRes.json();
-
-        // 1️⃣ Update state and localStorage
         setAccessToken(refreshData.access_token);
         localStorage.setItem("accessToken", refreshData.access_token);
-
-        // 2️⃣ Retry original request with new token
         finalOptions.headers.Authorization = `Bearer ${refreshData.access_token}`;
         res = await fetch(url, finalOptions);
       } else {
@@ -98,40 +130,10 @@
       }
     }
 
-      return res;
-    };
-  // this portion is available in login page
-  // const global_params = async (usernameInput,companynoInput) => {
-  //  try {
-  //      const res = await fetch(`${API_URL}/set_globalparams`,{
-  //        method: "POST",
-  //        headers: {"Content-Type": "application/json"},
-  //        body: JSON.stringify({ username: usernameInput, companyno: companynoInput})
-  //      }   );
-  //      const data = await res.json();
-  //      const params = data.params || {};
-      
-  //      if(!res.ok) throw new Error( data.detail||"globalparams failed");
-  //       setUsername(params.username);
-  //       setCompanycode(params.companycode);
-  //       setCompanyid(params.companyid);
-  //       setCompanyno(params.companyno);
+    return res;
+  };
 
-  //        // also save in localStorage (optional persistence)
-  //       localStorage.setItem("username", params.username);
-  //       localStorage.setItem("companyid", params.companyid);
-  //       localStorage.setItem("companyno", params.companyno);
-  //       localStorage.setItem("companycode", params.companycode);
-        
-  //        console.log("globalparams Data:",params);
-
-  //      return params;
-  //  }
-  //  catch (err){
-  //   console.error("Error Globalparams",err.message);
-
-  //  }}
-     
+  // --- AUTO SAVE TO LOCAL STORAGE ---
   useEffect(() => {
     if (accessToken) localStorage.setItem("accessToken", accessToken);
     if (refreshToken) localStorage.setItem("refreshToken", refreshToken);
@@ -139,25 +141,33 @@
     if (companyid) localStorage.setItem("companyid", companyid);
     if (companyno) localStorage.setItem("companyno", companyno);
     if (companycode) localStorage.setItem("companycode", companycode);
-  }, [accessToken, refreshToken, username, companyid, companyno, companycode]);
+    if (companyname) localStorage.setItem("companyname", companyname);
+  }, [accessToken, refreshToken, username, companyid, companyno, companycode, companyname]);
 
-    return (
-      <AuthContext.Provider
-        value={{           
-          jwttoken,
-          logout,
-          authFetch, 
-          accessToken, 
-          refreshToken, 
-          setAccessToken, 
-          setRefreshToken,  
-          username, setUsername,
-          companyno, setCompanyno,
-          companyid, setCompanyid,
-          companycode, setCompanycode, 
-        }}
-      >
-        {children}
-      </AuthContext.Provider>
-    );
-  };
+  return (
+    <AuthContext.Provider
+      value={{
+        jwttoken,
+        globalParams,
+        logout,
+        authFetch,
+        accessToken,
+        refreshToken,
+        username,
+        companyno,
+        companyid,
+        companycode,
+        companyname,
+        setAccessToken,
+        setRefreshToken,
+        setUsername,
+        setCompanyno,
+        setCompanyid,
+        setCompanycode,
+        setCompanyname,
+      }}
+    >
+      {children}
+    </AuthContext.Provider>
+  );
+};

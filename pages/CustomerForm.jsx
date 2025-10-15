@@ -7,10 +7,10 @@ import SearchModal from "../components/SearchModal";
 import DataContext, { useData } from "../context/DataContext";
 
 function CustomerForm({ onClose, onSaved, customerObject, setCustomerObject, navigateToList, handleDelete }) {
-  const { customer, companyname, companyno, companyid, companies } = useContext(DataContext);
+  const { customer, companyname, companyno, companyid } = useContext(DataContext);
   const { acessToken, authFetch, username: ctxUsername, companyid: defaultcompanyid, companyno: defaultCompanyno } = useContext(AuthContext);
-  const { citys, fetchCities, fetchCurrencies, currencies, states, fetchStates, countries } = useData();
-
+  const { citys, fetchCities, fetchCurrencies, currencies, states, fetchStates, companies,fetchCompanies} = useData();
+  
   const [activeTab, setActiveTab] = useState("address");
   const [address, setaddress] = useState({
     address1: "",
@@ -35,8 +35,8 @@ function CustomerForm({ onClose, onSaved, customerObject, setCustomerObject, nav
   const [formData, setFormData] = useState({
     id: null,
     companyid: defaultcompanyid,
-    companyname: companyname ?? "",
-    companyno: companyno ?? "",
+    companyname:  companyname??"",
+    companyno:  "",
     customer_type: "",
     customername: "",
     contactperson: "",
@@ -78,8 +78,8 @@ function CustomerForm({ onClose, onSaved, customerObject, setCustomerObject, nav
   const cno = defaultCompanyno || fallbackParams.companyno || companyno;
 
   const gstOptions = [
-    { value: "B2B", label: "Business to Business (B2B)" },
     { value: "B2C", label:"Business to Consumer (B2C)" },
+    { value: "B2B", label: "Business to Business (B2B)" }, 
     { value: "B2CS", label: "Business to Consumer – Small (B2CS)" },
     { value: "B2CL", label: "Business to Consumer – Large (B2CL)" },
     { value: "EXP", label: "Export (EXP)" },
@@ -91,28 +91,39 @@ function CustomerForm({ onClose, onSaved, customerObject, setCustomerObject, nav
   const cityOptions = useMemo(() => citys.map(tm => ({ value: tm.id, label: tm.cityname, statename: tm.statename, countryname: tm.countryname })), [citys]);
   const currencyOptions = useMemo(() => currencies.map(c => ({ value: c.id, label: c.currencycode })), [currencies]);
   const supplyOptions = useMemo(() => states.map(s => ({ value: s.id, label: s.statename, countryid: s.countryid, countryname: s.countryname })), [states]);
-  // const countryOptions = useMemo(() => (countries || []).map(c => ({ value: c.id, label: c.countryname })), [countries]);
+ 
+  useEffect(() => {
+    if (!companies.length) {
+      fetchCompanies();
+    }
+  }, [companies.length, fetchCompanies]);
 
+  useEffect(() => {
+  if (  Array.isArray(companies) && companies.length > 0) {
+    const defaultCompany = companies.find(c => c.companyid === defaultcompanyid);
+    if (defaultCompany) {
+      setFormData(prev => ({
+        ...prev,
+        companyname: defaultCompany.companyname,
+        companyno: defaultCompany.companyno,
+        companyid: defaultCompany.companyid
+      }));
+     
+      console.log("Default company set:", defaultCompany.companyname);
+    }
+  }
+}, [companies, defaultcompanyid ]);
+
+ 
   // Reset form for new entry
   const resetForm = () => {
-    let defaultCompanyName = "Default Company"; 
-    let defaultCompanyno = "Default Company No"
-
-    if (Array.isArray(companies)) {
-      const match = customer.find(c => c.companyid === defaultcompanyid);
-      if (match) {
-        defaultCompanyName = match.companyname;
-        defaultCompanyno = match.companyno;
-      }
-    }
-
-    console.log("Matches companyname",companyname);
-
+    const defaultCompany = companies.find(c => c.companyid === defaultcompanyid) || { companyname: "", companyno: "" };
+    console.log("defafult companyname",defaultCompany);
     setFormData({
-      id: null,
+      id: null, 
       companyid: cid,
-      companyname: companyname ?? defaultCompanyName,
-      companyno: cno,
+      companyname:defaultCompany.companyname || "",
+      companyno: defaultCompany.companyno || "",
       customer_type: "",
       customername: "",
       contactperson: "",
@@ -187,8 +198,8 @@ function CustomerForm({ onClose, onSaved, customerObject, setCustomerObject, nav
  useEffect(() => {
   if (!citys.length) fetchCities();
   if (!currencies.length) fetchCurrencies();
-  if (!states.length) fetchStates();
-}, [citys.length, currencies.length, states.length]);
+  if (!states.length) fetchStates(); 
+}, [citys.length, currencies.length, states.length,companies.length]);
 
 
   // Generic change handler (handles checkboxes and text/select)
@@ -372,6 +383,17 @@ function CustomerForm({ onClose, onSaved, customerObject, setCustomerObject, nav
         active: formData.active,
         createdby: formData.createdby || uname,
         modifiedby: formData.modifiedby || uname,
+        contacts: contacts.map(c => ({
+            id: c.id || null,                // important for update
+            customerid: c.customerid || formData.id,
+            contact_type: c.contact_type,
+            contact_person: c.contact_person,
+            contact_mobile: c.contact_mobile||null,
+            contact_phone: c.contact_phone||null,
+            contact_email: c.contact_email||null,
+            active: true,
+             rowno: c.rowno 
+          }))
       };
 
       const endpoint = isEdit ? `${API_URL}/updatecustomer/${formData.id}` : `${API_URL}/addcustomer/`;
@@ -394,6 +416,7 @@ function CustomerForm({ onClose, onSaved, customerObject, setCustomerObject, nav
 
       // refresh contacts from server
       await fetchContacts(savedCustomereader.id);
+      console.log(contacts);
 
       setMessage("Customer Header and Contacts Details saved successfully!");
       if (typeof onSaved === "function") onSaved();
@@ -432,14 +455,14 @@ function CustomerForm({ onClose, onSaved, customerObject, setCustomerObject, nav
       <form onSubmit={handleSubmit}>
         <header className="card p-3 border border-secondary w-100 mt-2" style={{ backgroundColor: "#ebe6e6ff" }}>
           <div className="row mb-3">
-            <div className="col-md-3">
+            {/* <div className="col-md-3">
               <label className="form-label">Company Name</label>
-              <input type="text" className="form-control" name="companyname" readOnly value={formData.companyname} onChange={handleChange} style={{ width: "200px" }} />
+              <input type="text" className="form-control" name="companyname" readOnly value={formData.companyname || "Loading..."} onChange={handleChange} style={{ width: "200px" }} />
             </div>
             <div className="col-md-3">
               <label className="form-label">Company No</label>
-              <input type="text" className="form-control" name="companyno" readOnly value={formData.companyno} onChange={handleChange} style={{ width: "100px" }} />
-            </div>
+              <input type="text" className="form-control" name="companyno" readOnly value={formData.companyno || "Loading..."} onChange={handleChange} style={{ width: "100px" }} />
+            </div> */}
             <div className="col-md-6">
                <br />
               <div className="d-flex gap-3">               
@@ -504,8 +527,8 @@ function CustomerForm({ onClose, onSaved, customerObject, setCustomerObject, nav
               <label className="form-label">Place of Supply</label>
               <Select
                 options={supplyOptions}
-                value={supplyOptions.find(opt => opt.value === formData?.placeof_supply) || null}
-                onChange={(selectedSupply) => setFormData(prev => ({ ...prev, placeof_supply: selectedSupply?.value?.toString() }))}
+                value={supplyOptions.find(opt => opt.label === formData?.placeof_supply) || null}
+                onChange={(selectedSupply) => setFormData(prev => ({ ...prev, placeof_supply: selectedSupply?.label  }))}
                 placeholder="-- Select Place of Supply--"
                 isClearable
                 isSearchable                
@@ -641,8 +664,8 @@ function CustomerForm({ onClose, onSaved, customerObject, setCustomerObject, nav
                 disabled
               >
                 <option value="">-- Select Country --</option>
-                {(countries || []).map((c) => (
-                  <option key={c.id} value={c.id}>
+                {(states || []).map((c,i) => (
+                  <option key={`${c.countryid}-${i}`} value={c.countryid}>
                     {c.countryname}
                   </option>
                 ))}
@@ -735,8 +758,8 @@ function CustomerForm({ onClose, onSaved, customerObject, setCustomerObject, nav
                 disabled
               >
                 <option value="">-- Select Country --</option>
-                {(countries || []).map((c) => (
-                  <option key={c.id} value={c.id}>
+                {(states || []).map((c,i) => (
+                  <option key={`${c.countryid}-${i}`} value={c.countryid}>
                     {c.countryname}
                   </option>
                 ))}
@@ -820,7 +843,7 @@ function CustomerForm({ onClose, onSaved, customerObject, setCustomerObject, nav
       <SearchModal
         show={showModal}
         onClose={() => setShowModal(false)}
-        apiUrl={`${API_URL}/customer/search/${companyid}`}
+        apiUrl={`${API_URL}/customer/search/${defaultcompanyid}`}
         columns={[
           { field: "customername", label: "Customer Name" },
           { field: "active", label: "active" }

@@ -10,7 +10,8 @@ function Login() {
     setUsername, 
     setCompanyid, 
     setCompanyno, 
-    setCompanycode 
+    setCompanycode ,
+    setCompanyname
   } = useContext(AuthContext);
 
   const navigate = useNavigate();
@@ -94,6 +95,7 @@ function Login() {
       localStorage.setItem("companyid", global.companyid);
       localStorage.setItem("companyno", global.companyno);
       localStorage.setItem("companycode", global.companycode);
+      if (global.companyname) setCompanyname(global.companyname);
 
       console.log("Global params set in state and localStorage");
       console.log("CompanyID in localStorage:", localStorage.getItem("companyid"));

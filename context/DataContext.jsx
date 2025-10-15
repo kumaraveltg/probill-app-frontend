@@ -22,6 +22,7 @@ export const DataProvider = ({ children }) => {
   const [hsn,setHsn]= useState([]);
   const [customer,setCustomer]= useState([])
   const [currencies, setCurrencies] = useState([]); 
+  const [invoice,setInvoice]= useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const limit = 10;
@@ -367,15 +368,41 @@ const fetchCustomer = useCallback(async(skip=0,limit=50) => {
     }
   };
 
+// Invoices fetch 
+ const fetchInvoices = useCallback(async (skip=0,limit=100) => {
+  if(!companyid) {
+    console.error("Company Id is not avaialble");
+    return;
+  }
+  console.log("AccessToken",accessToken);
+    try {
+      setLoading(true);
+      const res = await authFetch(`${API_URL}/getinvoice/${companyid}?skip=${skip}&limit=${limit}`,
+        { headers: {"Authorization": `Bearer ${accessToken}`}
+        } 
+      );
+      if(!res.ok) throw new Error(`HTTP Error ${res.status}`);
+      const data = await res.json();
+      console.log("Fetch Invoice Data:",data);
+      setInvoice(data.customer_list||[]);
+      setTotal(data.total || 0);
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setLoading(false);
+    }
+  } );
+
+
  //✅ Initial data load - only when accessToken is available
   useEffect(() => {
     if (accessToken) {
       const fetchData = async () => {   
-        await fetchCustomer(0, 50); 
+        await fetchInvoices(0, 100); 
       }; 
       fetchData();
     }
-  }, [accessToken,fetchCustomer ]);
+  }, [accessToken ]);
 
  // ✅ Fetch UOMs when companyid becomes available
   // useEffect(() => {
@@ -405,7 +432,7 @@ const fetchCustomer = useCallback(async(skip=0,limit=50) => {
         error,
         total,
         companyid,busers,fetchUsers,userRole,fetchUserRole,finyr,fetchFinyr,taxmaster,fetchTaxMaster,
-        items,fetchItems,test,hsn,fetchHsn,customer,fetchCustomer,currencies,fetchCurrencies
+        items,fetchItems,test,hsn,fetchHsn,customer,fetchCustomer,currencies,fetchCurrencies,invoice,fetchInvoices
       }}
     >
       {children}

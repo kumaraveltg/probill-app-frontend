@@ -154,6 +154,11 @@ function Sidebar({ collapsed, setCollapsed }) {
                  Customer
                 </Link>
               </li>
+              <li className="nav-item sidebar-subitem">
+                <Link className="nav-link text-light small p-1" to="invoice">
+                 Invoice
+                </Link>
+              </li>
             </ul>
           )}
         </li>

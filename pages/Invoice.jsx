@@ -2,33 +2,30 @@ import { useState,useContext,useEffect } from "react";
 import { FaPlus, FaSearch } from "react-icons/fa";
 import DataContext from "../context/DataContext";
 import { API_URL } from "../components/Config";  
-import CustomerForm from "./CustomerForm";
-import { useNavigate } from "react-router-dom";
+import InvoiceForm from "./InvoiceForm"; 
 
-function Customer() {
-    const {customer,fetchCustomer,Loading,total,error} = useContext(DataContext);
+function Invoice() {
+    const {invoice,fetchInvoices,Loading,total,error} = useContext(DataContext);
     const [showForm,setShowForm]=useState(false);
     const [search,setSearch]= useState('');
     const [page,setPage]= useState(0);
-    const [customerObject,setCustomerObject]=useState();
-    const [limit,setLimit] = useState(50);
+    const [invoiceObject,setInvoiceObject]=useState();
+    const [limit,setLimit] = useState(100);
 
- const filteredCustomer = customer.filter(c =>
+ const filteredInvoice = invoice.filter(c =>
   [
     c.id,
     c.companyname,
+    c.invoiceno,
+    c.invoicedate,
+    c.referenceno,
+    c.referencedate,
     c.customername,
-    c.contactperson,
     c.currencycode,
-    c.address1,
-    c.address2,
-    c.cityname,
-    c.statename,
-    c.countryname,
-    c.active ? "Yes" : "No",
-    c.companyid,
-    c.companyname, 
-    c.companyno, 
+    c.exrate,
+    c.grossamount,
+    c.taxamt,
+    c.netamount,
     c.createdby,
     c.modifiedby,
     c.createdon,
@@ -39,32 +36,32 @@ function Customer() {
   .includes(search.toLowerCase())
 );
 useEffect(() => {
-    fetchCustomer(page * limit, limit);
+    fetchInvoices(page * limit, limit);
 }, [page,limit ]);
 
 //New UOM 
 const handleNew = () => {
     setShowForm(true);
-    setCustomerObject(null);
+    setInvoiceObject(null);
 };
 
 const handleSaved = () => {
-  fetchCustomer(); // refresh list
+  fetchInvoices(); // refresh list
 };
 
 
 useEffect(()=>{ 
-customerObject && setShowForm(true); 
-},[customerObject])
+invoiceObject && setShowForm(true); 
+},[invoiceObject])
 
 const handleDelete = async(id) => {
- if (!window.confirm("Are you Sure Want to Delete this Customer?"))
+ if (!window.confirm("Are you Sure Want to Delete this Invoiceno?"))
      return;
     try{
-    const res = await fetch(`${API_URL}/custdelete/${id}`, 
+    const res = await fetch(`${API_URL}/invoicedelete/${id}`, 
       { method: "DELETE" });
     if (res.ok) {
-        fetchCustomer(page * limit, limit);
+        fetchInvoices(page * limit, limit);
     }   
     else {
         console.error("Failed to delete Customer");
@@ -76,7 +73,7 @@ const handleDelete = async(id) => {
     return (    
         <div className="container-fluid">
         <div className="d-flex justify-content-between align-items-center my-3">
-          <h2>Customer </h2>
+          <h2>Invoice </h2>
            
         </div>  
         {!showForm ? (
@@ -91,7 +88,7 @@ const handleDelete = async(id) => {
                 <input
                     type="text"
                     className="form-control"
-                    placeholder="Search Customer..."
+                    placeholder="Search Invoices..."
                     value={search}
                     onChange={(e) => setSearch(e.target.value)}
                 />
@@ -102,7 +99,7 @@ const handleDelete = async(id) => {
             <div className="col-md-4 text-end">
                 <button className="btn btn-primary" onClick={handleNew}>
                 <FaPlus className="me-2" />
-                New Customer
+                New Invoice
                 </button>
             </div>
             </div>
@@ -111,15 +108,16 @@ const handleDelete = async(id) => {
 <thead className="table-light">
 <tr>
 <th>Company Name</th>
+<th>Invoice No</th>
+<th>Invoice Date</th>
+<th>Reference No</th>
+<th>Reference Date</th>
 <th>Customer Name</th>
-<th>Contact Person</th>
-<th>Address1</th>  
-<th>Address2</th> 
-<th>City Name</th>
-<th>State Name</th>
-<th>Country</th>
-<th>Currency</th> 
-<th>Active</th>
+<th>Currency</th>
+<th>ExChage Rate</th>  
+<th>Gross Amount</th> 
+<th>Tax Amount</th>
+<th>Net Amount</th> 
 <th>Created By</th>
 <th>Created On</th> 
 <th>Modified By</th>
@@ -136,23 +134,24 @@ const handleDelete = async(id) => {
 <tr>
     <td colSpan="9" className="text-center text-danger">Error: {error}</td>     
 </tr>
-) : filteredCustomer.length === 0 ? (
+) : filteredInvoice.length === 0 ? (
 <tr>    
     <td colSpan="9" className="text-center">No Customer found.</td>
 </tr>
 ) : (    
-filteredCustomer.map((i) => ( 
+filteredInvoice.map((i) => ( 
     <tr key={i.id}> 
         <td>{i.companyname}</td>  
+        <td>{i.invoiceno}</td>
+        <td>{i.invoicedate}</td>
+        <td>{i.referenceno}</td>
+        <td>{i.referencedate}</td>
         <td>{i.customername}</td>
-        <td>{i.contactperson}</td>
-        <td>{i.address1}</td>
-        <td>{i.address2}</td>
-        <td>{i.cityname}</td>
-        <td>{i.statename}</td>
-        <td>{i.countryname}</td>
-        <td>{i.currencycode}</td> 
-        <td>{i.active ? "Yes" : "No"}</td>
+        <td>{i.currencycode}</td>
+        <td>{i.exrate}</td>
+        <td>{i.grossamount}</td>
+        <td>{i.taxamt}</td>
+        <td>{i.netamount}</td> 
         <td>{i.createdby}</td>
         <td>{i.createdon}</td> 
         <td>{i.modifiedby}</td>
@@ -160,7 +159,7 @@ filteredCustomer.map((i) => (
         <td>
             <button 
                 className="btn btn-sm btn-primary me-2" 
-                onClick={() => setCustomerObject(i)}
+                onClick={() => setInvoiceObject(i)}
             >
                 <i className="bi bi-pencil"></i> 
             </button>
@@ -179,7 +178,7 @@ filteredCustomer.map((i) => (
         </div>
         <div className="d-flex justify-content-between align-items-center my-3"
         >    
-            <div>Total Customers: {total}</div>
+            <div>Total Invoices: {total}</div>
         <label>
             Rows:
       <select
@@ -217,17 +216,17 @@ filteredCustomer.map((i) => (
         </div>
 </>     
         ) : (
-        <CustomerForm
-            customerObject={customerObject}
-            setCustomerObject={setCustomerObject}
+        <InvoiceForm
+            invoiceObject={invoiceObject}
+            setInvoiceObject={setInvoiceObject}
             onClose={() => { setShowForm(false);
-                 setCustomerObject(null); 
-                 fetchCustomer(page * limit, limit); }
+                 setInvoiceObject(null); 
+                 fetchInvoices(page * limit, limit); }
                 }
-            fetchCustomer={fetchCustomer}
+            fetchInvoices={fetchInvoices}
             navigateToList={() => { setShowForm(false);
-                 setCustomerObject(null); 
-                 fetchCustomer(page * limit, limit); }
+                 setInvoiceObject(null); 
+                 fetchInvoices(page * limit, limit); }
                 }
             handleDelete={handleDelete}
             handleNew={handleNew} 
@@ -239,4 +238,4 @@ filteredCustomer.map((i) => (
     );                
 
 }
-export default Customer;
+export default Invoice;
