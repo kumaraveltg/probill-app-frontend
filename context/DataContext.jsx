@@ -384,14 +384,14 @@ const fetchCustomer = useCallback(async(skip=0,limit=50) => {
       if(!res.ok) throw new Error(`HTTP Error ${res.status}`);
       const data = await res.json();
       console.log("Fetch Invoice Data:",data);
-      setInvoice(data.customer_list||[]);
+      setInvoice(data.invoice_list||[]);
       setTotal(data.total || 0);
     } catch (err) {
       setError(err.message);
     } finally {
       setLoading(false);
     }
-  } );
+  }, [companyid,authFetch,accessToken]);
 
 
  //✅ Initial data load - only when accessToken is available

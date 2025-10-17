@@ -6,6 +6,8 @@ import { AuthContext } from "../context/AuthContext";
 import { API_URL } from "../components/Config";
 import SearchModal from "../components/SearchModal";
 import DataContext, { useData } from "../context/DataContext";
+import { PDFDownloadLink } from "@react-pdf/renderer";
+import InvoicePDF from "./InvoicePDF";
 
 
 function InvoiceForm({ onClose, onSaved, invoiceObject, setInvoiceObject, navigateToList, handleDelete }) {
@@ -16,10 +18,10 @@ function InvoiceForm({ onClose, onSaved, invoiceObject, setInvoiceObject, naviga
   const [activeTab, setActiveTab] = useState("invdetail");
   const [invdetail, setInvdetail] = useState([
     { key: 1, itemname: "", itemcode: "", uoms: "", invoiceqty:0.000,invoicerate:0.00,taxname: "",taxrate:0.00,discounttype:"",afterdiscountamount:0.00,discount_amt_per:0.00,
-        dicountamount:0.00,afterDiscAmt:0.00,sgstper:0.00,cgstper:0.00,igstper:0.00,sgstamount:0.00,cgstamount:0.00,igstamount:0.00,taxamount:0.00,netamount:0.00, selected: false, rowno: 1 }
+        afterDiscAmt:0.00,sgstper:0.00,cgstper:0.00,igstper:0.00,gsgstamount:0.00,gcgstamount:0.00,gigstamount:0.00,taxamount:0.00,netamount:0.00, selected: false, rowno: 1 }
   ]);
   const [invfooter, setInvfooter] = useState({ totalqty:0.000,grossamount: 0.00,totsgstamt:0.00,totcgstamt:0.00,totigstamt:0.00,
-    discountamt:0.00,add_othercharges:0.00,ded_othercharges:0.00,roundedoff:0.00, netamount:0.00 
+    discountamt:0.00,add_othercharges:0.00,ded_othercharges:0.00,roundedoff:0.00, totnetamount:0.00 
   });
  
   const [formData, setFormData] = useState({
@@ -36,6 +38,7 @@ function InvoiceForm({ onClose, onSaved, invoiceObject, setInvoiceObject, naviga
     currencyid: null,
     exrate: 1.0000, 
     placeof_supply:"",
+    gstin: "",
     supplytype:"",
     remarks:"",
     createdby: "",
@@ -71,19 +74,7 @@ useEffect(() => {
     }
 }, [companies.length]); // no need to include functions if they are stable
 
-useEffect(() => {
-  console.log("📋 Updated formData:", formData);
-}, [formData]);
-
-  
-
-    useEffect(() => {
-      console.log("🧾 itemOptions after mapping:", itemOptions);
-    }, [itemOptions]);
-
-useEffect(() => {
-  console.log("🧾 TaxOptions after mapping:", taxOptions);
-}, [taxOptions]);
+ 
 
   useEffect(() => {
   if (  Array.isArray(companies) && companies.length > 0) {
@@ -101,7 +92,120 @@ useEffect(() => {
   }
 }, [companies, defaultcompanyid ]);
 
- 
+ const fetchInvoiceDetails = useCallback(async (invoice_headerid) => {
+    try {
+      const url = `${API_URL}/getinvoicedtl/${invoice_headerid}`;
+      const res = await authFetch(url, { headers: { Authorization: `Bearer ${acessToken}` } });
+
+      if (!res.ok) throw new Error(`HTTP error ${res.status}`);
+
+      const data = await res.json();
+      const invdtl = data.invdtl || [];
+      const invhdr = data.invhdr || {};
+      console.log("invoice Details",data.invdtl);
+
+      const newInvDetails = invdtl.length > 0
+     ? invdtl.map((p, idx) => {
+      // 🔍 Match item from itemOptions by itemid
+      const matchedItem = itemOptions?.find(it => Number(it.value) === Number(p.itemid));
+
+      return {
+        ...p,
+        key: idx + 1,
+        rowno: idx + 1,
+        invoice_headerid: p.invoice_headerid || invhdr?.id,
+
+        // ✅ Product & pricing from item master if missing
+        productcode: p.productcode || matchedItem?.productcode || "",
+        invoicerate: p.invoicerate || matchedItem?.selling_price || 0,
+        itemcode: p.productcode || matchedItem?.productcode || "",
+        uomid: p.uomid || matchedItem?.selling_uom || null,
+        taxheaderid: p.taxheaderid || matchedItem?.taxmasterid || null,
+        taxname: p.taxname || matchedItem?.taxname || "",
+        taxrate: p.taxrate || matchedItem?.taxrate || 0,
+
+        // ✅ Calculations with fallback
+        invoiceqty: p.invoiceqty || 0,
+        invoiceamount:
+         p.invoiceamount || 0
+          /*(p.invoiceqty || 0) * (p.invoicerate || matchedItem?.selling_price || 0)*/,
+
+        discount_amt_per: p.discount_amt_per || 0,
+        afterdiscountamount: parseFloat(Number(p.afterdiscountamount).toFixed(2)) || 0,
+        taxamount: p.taxamount || 0,
+        netamount: parseFloat(p.netamount) || 0,
+
+        // ✅ GST fields fallback
+        cgstper: p.cgstper || 0,
+        sgstper: p.sgstper || 0,
+        igstper: p.igstper || 0,
+        cgstamount: p.cgstamount || 0,
+        sgstamount: p.sgstamount || 0,
+        igstamount: p.igstamount || 0,
+
+        selected: false,
+      };
+    }).sort((a, b) => (a.rowno || 999) - (b.rowno || 999))
+  : [
+      {
+        key: 1,
+        itemid: null,
+        uomid: null,
+        productcode: "",
+        invoiceqty: 0.000,
+        invoicerate: 0.00,
+        invoiceamount: 0.00,
+        discounttype: "",
+        discount_amt_per: 0.00,
+        afterdiscountamount:0,
+        taxheaderid: null,
+        taxrate: 0.00,
+        cgstper: 0.00,
+        sgstper: 0.00,
+        igstper: 0.00,
+        cgstamount: 0.00,
+        sgstamount: 0.00,
+        igstamount: 0.00,
+        taxamount: 0.00,
+        netamount: 0.00,
+        selected: false,
+        rowno: 1,
+        invoice_headerid: invoice_headerid
+      }
+    ];
+
+      setInvdetail(newInvDetails);
+      // reset selectAll
+      setSelectAll(false);
+    } catch (err) {
+      console.error("❌ Error in fetchContacts:", err);
+      setInvdetail([{
+        key: 1,
+        itemid:null,
+        uomid:null,
+        productcode:"",
+        invoiceqty:0.000,
+        invoicerate:0.00,
+        invoiceamount:0.00,
+        discounttype:"",
+        discount_amt_per:0.00,
+        taxheaderid:null,
+        taxrate:0.00,
+        cgstper:0.00,
+        sgstper:0.00,
+        igstper:0.00,
+        gcgstamount:0.00,
+        gsgstamount:0.00,
+        gigstamount:0.00,
+        taxamount:0.00,
+        netamount:0.00,
+        selected: false,
+        rowno: 1,
+        invoice_headerid: null
+      }]);
+    }
+  }, [acessToken, authFetch,itemOptions, API_URL]);
+
   // Reset form for new entry
   const resetForm = () => {
     const defaultCompany = companies.find(c => c.companyid === defaultcompanyid) || { companyname: "", companyno: "" };
@@ -120,6 +224,7 @@ useEffect(() => {
       currencyid: null,
       exrate: 1.0000, 
       placeof_supply:"",
+      gstin: "",
       supplytype:"",
       remarks:"",
       createdby: uname || "",
@@ -128,149 +233,97 @@ useEffect(() => {
 
     setInvfooter({
        totalqty:0.000,grossamount: 0.00,totsgstamt:0.00,totcgstamt:0.00,totigstamt:0.00,
-    discountamt:0.00,add_othercharges:0.00,ded_othercharges:0.00,roundedoff:0.00, netamount:0.00  });
+    discountamt:0.00,add_othercharges:0.00,ded_othercharges:0.00,roundedoff:0.00, totnetamount:0.00  });
 
-    setInvdetail([{ key: 1, itemname: "", itemcode: "", uom: "", invoiceqty:0.000,invoicerate:0.00,taxname: "",taxrate:0.00,disctype:"",
-        dicamt:0.00,sgstper:0.00,cgstper:0.00,igstper:0.00,sgstamount:0.00,cgstamount:0.00,igstamount:0.00,taxamount:0.00,netamount:0.00, selected: false, rowno: 1 }
+    setInvdetail([{ key: 1, itemname: "", itemcode: "", uom: "", invoiceqty:0.000,invoicerate:0.00,taxname: "",taxrate:0.00,disctype:"",afterdiscountamount:0,
+        dicamt:0.00,sgstper:0.00,cgstper:0.00,igstper:0.00,gsgstamount:0.00,gcgstamount:0.00,gigstamount:0.00,taxamount:0.00,netamount:0.00, selected: false, rowno: 1 }
    ]);
     setIsEdit(false);
     setMessage("");
   };
 
-  // Populate form for edit or new
-  useEffect(() => {
-    if (invoiceObject && invoiceObject.id) {
-      setFormData({
+ // Edit Data 
+useEffect(() => {
+  const loadEditData = async () => {
+     
+    if (!invoiceObject?.id) {
+      resetForm();
+      return;
+    }
+
+    setIsEdit(true);
+
+    // ✅ 2. Load customer info from already-fetched list
+    if (Array.isArray(customer) && customer.length > 0) {
+      const customerInfo = customer.find(c => c.id === invoiceObject.customerid);
+
+      setFormData(prev => ({
+        ...prev,
         ...invoiceObject,
-        customerid: customerObject.cityid || null,
-        currencyid: customerObject.currencyid || null, 
-      });
-      setIsEdit(true);
-       
-    } else {
+        placeof_supply: customerInfo?.placeof_supply ?? "",
+        gstin: customerInfo?.gstin ?? "",
+      }));
+
+      console.log("✅ Customer info loaded for edit:", customerInfo);
+    }
+    if (invoiceObject.id) {
+        console.log("invoice Details",invdetail)
+        fetchInvoiceDetails(invoiceObject.id);
+
+      }
+     else {
       resetForm();
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [invoiceObject]);
+  }
+  loadEditData();
+  }, [invoiceObject, customer, fetchInvoiceDetails]);
 
-  
-
+ 
   // Generic change handler (handles checkboxes and text/select)
   const handleChange = (e) => {
     const { name, type } = e.target;
     const value = type === "checkbox" ? e.target.checked : e.target.value;  
     setFormData(prev => ({ ...prev, [name]: value }));
   };
+ 
 
-  
-  const fetchInvoiceDetails = useCallback(async (invoice_headerid) => {
-    try {
-      const url = `${API_URL}/getinvoicedtl/${invoice_headerid}`;
-      const res = await authFetch(url, { headers: { Authorization: `Bearer ${acessToken}` } });
-
-      if (!res.ok) throw new Error(`HTTP error ${res.status}`);
-
-      const data = await res.json();
-      const invdtl = data.invdtl || [];
-      const invhdr = data.invhdr || {};
-
-      const newInvDetails = invdtl.length > 0
-        ? custdtl.map((p, idx) => ({
-            ...p,
-            key: idx + 1,
-            invoice_headerid: p.invoice_headerid || invhdr?.id,
-            selected: false,
-            rowno: idx + 1
-          }))
-        : [{
-            key: 1,
-            itemid:null,
-            uomid:null,
-            invoiceqty:0.000,
-            invoicerate:0.00,
-            invoiceamount:0.00,
-            discounttype:"",
-            discount_amt_per:0.00,
-            taxheaderid:null,
-            taxrate:0.00,
-            cgstper:0.00,
-            sgstper:0.00,
-            igstper:0.00,
-            cgstamount:0.00,
-            sgstamount:0.00,
-            igstamount:0.00,
-            taxamount:0.00,
-            netamount:0.00,
-            selected: false,
-            rowno: 1,
-            invoice_headerid: invoice_headerid
-          }];
-
-      setInvdetail(newInvDetails);
-      // reset selectAll
-      setSelectAll(false);
-    } catch (err) {
-      console.error("❌ Error in fetchContacts:", err);
-      setInvdetail([{
-        key: 1,
-        itemid:null,
-        uomid:null,
-        invoiceqty:0.000,
-        invoicerate:0.00,
-        invoiceamount:0.00,
-        discounttype:"",
-        discount_amt_per:0.00,
-        taxheaderid:null,
-        taxrate:0.00,
-        cgstper:0.00,
-        sgstper:0.00,
-        igstper:0.00,
-        cgstamount:0.00,
-        sgstamount:0.00,
-        igstamount:0.00,
-        taxamount:0.00,
-        netamount:0.00,
-        selected: false,
-        rowno: 1,
-        invoice_headerid: null
-      }]);
+  // Add Row in Grid
+ const addInvdetailRow = () => {
+  setInvdetail(prev => [
+    ...prev,
+    {
+      key: prev.length + 1,
+      id: null,           // <-- set null for new items
+      itemid: null,
+      uomid: null,
+      invoiceqty: 0.0,
+      invoicerate: 0.0,
+      invoiceamount: 0.0,
+      discounttype: "",
+      discount_amt_per: 0.0,
+      afterdiscountamount: 0.0,
+      taxheaderid: null,
+      taxrate: 0.0,
+      cgstper: 0.0,
+      sgstper: 0.0,
+      igstper: 0.0,
+      cgstamount: 0.0,
+      sgstamount: 0.0,
+      igstamount: 0.0,
+      taxamount: 0.0,
+      netamount: 0.0,
+      selected: false,
+      rowno: prev.length + 1,
     }
-  }, [acessToken, authFetch, API_URL]);
+  ]);
+};
 
-  // Contacts helpers
-  const addInvdetailRow = () => {
-    setInvdetail(prev => [
-      ...prev,
-      {
-        key: prev.length + 1,        
-        itemid:null,
-        uomid:null,
-        invoiceqty:0.000,
-        invoicerate:0.00,
-        invoiceamount:0.00,
-        discounttype:"",
-        discount_amt_per:0.00,
-        taxheaderid:null,
-        taxrate:0.00,
-        cgstper:0.00,
-        sgstper:0.00,
-        igstper:0.00,
-        cgstamount:0.00,
-        sgstamount:0.00,
-        igstamount:0.00,
-        taxamount:0.00,
-        netamount:0.00,             
-        selected: false,
-        rowno: prev.length + 1
-      }
-    ]);
-  };
-
+//Grid Calculation 
 const handleInvDetailsChange = (index, field, value) => {
   setInvdetail(prev => {
     const updated = [...prev];
     const row = { ...updated[index] };
-
+  console.log(`Updated row ${index}:`, updated[index].netamount); 
     // ✅ Convert numeric fields to numbers
     const numericFields = ["invoiceqty", "invoicerate", "taxrate", "discount_amt_per"];
     if (numericFields.includes(field)) {
@@ -278,14 +331,16 @@ const handleInvDetailsChange = (index, field, value) => {
     } else {
       row[field] = value;
     }
-
+        if (field === "selling_price") {
+      row.invoicerate = parseFloat(value) || 0;
+    }
     // 🧮 Auto-calculate invoice amount
     
     const qty = parseFloat(row.invoiceqty) || 0;
-    const rate = parseFloat(row.selling_price) || 0;
+    const rate = parseFloat(row.invoicerate) || 0;
       row.invoiceamount = qty*rate;
  
-    console.log(`Row ${index} invoiceqty: ${row.invoiceqty}, invoicerate: ${row.selling_price}, invoiceamount: ${row.invoiceamount}`);
+    console.log(`Row ${index} invoiceqty: ${row.invoiceqty}, invoicerate: ${row.invoicerate}, invoiceamount: ${row.invoiceamount}`);
     // 🧮 Discount calculation
     const amount = row.invoiceamount || 0;
     const disc = row.discount_amt_per || 0;
@@ -308,33 +363,33 @@ const handleInvDetailsChange = (index, field, value) => {
       row.igstper = taxRate;
       row.sgstper = 0;
       row.cgstper = 0;
-      row.igstamount = (afterDiscAmt * row.igstper) / 100;
-      row.sgstamount = 0;
-      row.cgstamount = 0;
+      row.gigstamount = (afterDiscAmt * row.igstper) / 100;
+      row.gsgstamount = 0;
+      row.gcgstamount = 0;
     } else {
       row.sgstper = taxRate / 2;
       row.cgstper = taxRate / 2;
       row.igstper = 0;
-      row.sgstamount = (afterDiscAmt * row.sgstper) / 100;
-      row.cgstamount = (afterDiscAmt * row.cgstper) / 100;
-      row.igstamount = 0;
+      row.gsgstamount = (afterDiscAmt * row.sgstper) / 100;
+      row.gcgstamount = (afterDiscAmt * row.cgstper) / 100;
+      row.gigstamount = 0;
     }
 
     // 🧾 Calculate net amount
     row.netamount =
       afterDiscAmt +
-      (row.sgstamount || 0) +
-      (row.cgstamount || 0) +
-      (row.igstamount || 0);
+      (row.gsgstamount || 0) +
+      (row.gcgstamount || 0) +
+      (row.gigstamount || 0);
 
     // ✅ Format numeric fields to 2 decimals for display
-    row.invoiceamount = Number(row.invoiceamount).toFixed(2);
-    row.afterdiscountamount = Number(row.afterdiscountamount).toFixed(2);
-    row.taxamount = Number(row.taxamount).toFixed(2);
-    row.sgstamount = Number(row.sgstamount).toFixed(2);
-    row.cgstamount = Number(row.cgstamount).toFixed(2);
-    row.igstamount = Number(row.igstamount).toFixed(2);
-    row.netamount = Number(row.netamount).toFixed(2);
+    row.invoiceamount = parseFloat(Number(row.invoiceamount).toFixed(2));
+    row.afterdiscountamount = parseFloat(Number(row.afterdiscountamount).toFixed(2));
+    row.taxamount = parseFloat(Number(row.taxamount).toFixed(2));
+    row.gsgstamount = parseFloat(Number(row.gsgstamount).toFixed(2));
+    row.gcgstamount = parseFloat(Number(row.gcgstamount).toFixed(2));
+    row.gigstamount = parseFloat(Number(row.gigstamount).toFixed(2));
+    row.netamount = parseFloat(Number(row.netamount).toFixed(2));
 
     updated[index] = row;
     return updated;
@@ -349,25 +404,25 @@ const totals = (Array.isArray(invdetail) ? invdetail : []).reduce(
     acc.totalDiscount += parseFloat(row.invoiceamount || 0) - parseFloat(row.afterdiscountamount || 0);
     acc.totalafterDiscAmt += parseFloat(row.afterdiscountamount||0)
     acc.totalTax +=
-      parseFloat(row.sgstamount || 0) +
-      parseFloat(row.cgstamount || 0) +
-      parseFloat(row.igstamount || 0);
+      parseFloat(row.gsgstamount || 0) +
+      parseFloat(row.gcgstamount || 0) +
+      parseFloat(row.gigstamount || 0);
     acc.totalNet += parseFloat(row.netamount || 0);
     return acc;
   },
   { totalQty: 0, totalInvoiceAmt: 0, totalDiscount: 0,totalafterDiscAmt:0, totalTax: 0, totalNet: 0 }
 );
 
-//calculate Footer 
+//  Footer - Calculation
 
 const calculateFooter = () => {
   const totals = invdetail.reduce((acc, row) => {
     acc.totalqty += parseFloat(row.invoiceqty || 0);
     acc.grossamount += parseFloat(row.invoiceamount || 0);
     acc.discountamt += parseFloat(row.discountamount || 0);
-    acc.totsgstamt += parseFloat(row.sgstamount || 0);
-    acc.totcgstamt += parseFloat(row.cgstamount || 0);
-    acc.totigstamt += parseFloat(row.igstamount || 0);
+    acc.totsgstamt += parseFloat(row.gsgstamount || 0);
+    acc.totcgstamt += parseFloat(row.gcgstamount || 0);
+    acc.totigstamt += parseFloat(row.gigstamount || 0);
     return acc;
   }, {
     totalqty: 0,
@@ -395,7 +450,7 @@ const calculateFooter = () => {
     ...prev,
     ...totals,
     roundedoff: roundedOff,
-    netamount: roundedNet
+    totnetamount: roundedNet
   }));
 };
 
@@ -405,27 +460,26 @@ const calculateFooter = () => {
   }, [invdetail, invfooter.add_othercharges, invfooter.ded_othercharges]);
 
    // Recalculate all rows when supplytype changes
-
   useEffect(() => { 
-  setInvdetail(prev => prev.map((r, i) => {
-    handleInvDetailsChange(i, "taxrate", r.taxrate);
+  setInvdetail(prev => prev.map((r, i) => { 
+    handleInvDetailsChange(i, "taxrate", r.taxrate);    
     return { ...r }; // keep row
-  }));
-}, [formData.supplytype]);
+    }));
+   }, [formData.supplytype ]);
 
-
+// select toggle select for delete grid row
   const toggleSelect = (idx) => {
     setInvdetail(prev => {
       const updated = prev.map((c, i) => (i === idx ? { ...c, selected: !c.selected } : c));
       setSelectAll(updated.every(c => c.selected));
       return updated;
     });
-  };
+   };
 
   const handleSelectAll = (checked) => {
     setSelectAll(checked);
     setInvdetail(prev => prev.map(p => ({ ...p, selected: checked })));
-  };
+   };
 
   const handleDeleteInvDetails = () => {
     const remaining = invdetail.filter(p => !p.selected);
@@ -458,21 +512,21 @@ const calculateFooter = () => {
       invoiceno: formData.invoiceno,
       invoicedate: formData.invoicedate,
       customerid: formData.customerid,
-      referenceno: formData.referenceno || null,
-      referencedate: formData.referencedate || null,
+      referenceno: formData.referenceno || " ",
+      referencedate: formData.referencedate ,
       currencyid: formData.currencyid,
       exrate: 1.0,
       supplytype: formData.supplytype,
-      remarks: formData.remarks || null,
-      grossamount: formData.grossamount || 0,
-      sgstamount: formData.sgstamount || 0,
-      cgstamount: formData.cgstamount || 0,
-      igstamount: formData.igstamount || 0,
-      discountamount: formData.discountamount || 0,
-      add_othercharges: formData.add_othercharges || 0,
-      ded_othercharges: formData.ded_othercharges || 0,
-      roundedoff: formData.roundedoff || 0,
-      netamount: formData.netamount || 0,
+      remarks: formData.remarks || " ",
+      grossamount: invfooter.grossamount || 0,
+      sgstamount: invfooter.totsgstamt || 0,
+      cgstamount: invfooter.totcgstamt || 0,
+      igstamount: invfooter.totigstamt || 0,
+      discountamount: invfooter.discountamt || 0,
+      add_othercharges: invfooter.add_othercharges || 0,
+      ded_othercharges: invfooter.ded_othercharges || 0,
+      roundedoff: invfooter.roundedoff || 0,
+      totnetamount: invfooter.totnetamount || 0,
       createdby: formData.createdby || uname,
       modifiedby: formData.modifiedby || uname,
 
@@ -484,18 +538,20 @@ const calculateFooter = () => {
         itemid: c.itemid,                   // required
         uomid: c.uomid,                     // required
         invoiceqty: c.invoiceqty || 0,
-        invoicerate: c.invoicerate || 0,
+        selling_price: c.selling_price || c.invoicerate, // show selling price
+        invoicerate: c.invoicerate || c.selling_price,   // post as invoicerate
         invoiceamount: c.invoiceamount || 0,
         discounttype: c.discounttype || null,
         discount_amt_per: c.discount_amt_per || 0,
+        afterdiscountamount:c.afterdiscountamount,
         taxheaderid: c.taxheaderid || null,
         taxrate: c.taxrate,                 // required
         cgstper: c.cgstper || 0,
         sgstper: c.sgstper || 0,
         igstper: c.igstper || 0,
-        cgstamount: c.cgstamount || 0,
-        sgstamount: c.sgstamount || 0,
-        igstamount: c.igstamount || 0,
+        gcgstamount: c.gcgstamount || 0,
+        gsgstamount: c.gsgstamount || 0,
+        gigstamount: c.gigstamount || 0,
         taxamount: c.taxamount || 0,
         netamount: c.netamount || 0
       }))
@@ -527,27 +583,27 @@ const calculateFooter = () => {
     const savedinvheader = await res.json();
     console.log("Saved Invoice Header:", savedinvheader);
 
-    // Update formData with new invoice ID
-    if (savedinvheader?.id) {
-      setFormData(prev => ({ ...prev, id: savedinvheader.id }));
+      // Update formData with new invoice ID
+      if (savedinvheader?.id) {
+        setFormData(prev => ({ ...prev, id: savedinvheader.id }));
 
-      // Fetch invoice details using returned ID
-      await fetchInvoiceDetails(savedinvheader.id);
-    }
+        // Fetch invoice details using returned ID
+        await fetchInvoiceDetails(savedinvheader.id);
+      }
 
-    setMessage("Invoice Header and Details saved successfully!");
-    if (typeof onSaved === "function") onSaved();
-    onClose?.();
+      setMessage("Invoice Header and Details saved successfully!");
+      if (typeof onSaved === "function") onSaved();
+      onClose?.();
 
-  } catch (err) {
-    console.error("Error saving Invoice:", err);
-    setMessage(err?.message || "Failed to save Invoice.");
-  } finally {
-    setLoading(false);
-  }
-};
+    } catch (err) {
+      console.error("Error saving Invoice:", err);
+      setMessage(err?.message || "Failed to save Invoice.");
+    } finally {
+          setLoading(false);
+      }
+    };
 
-
+  // Record Delete
   const handleDeleteClick = () => {
     if (formData?.id) {
       handleDelete(formData.id);
@@ -556,6 +612,8 @@ const calculateFooter = () => {
       alert("No Customer selected");
     }
   };
+
+
 
   return (
     <div className="card w-100">
@@ -573,7 +631,7 @@ const calculateFooter = () => {
 
       <form onSubmit={handleSubmit}>
         <header className="card p-3 border border-secondary w-100 mt-2" style={{ backgroundColor: "#ebe6e6ff" }}>
-          <div className="row mb-3">
+          {/* <div className="row mb-3">
             <div className="col-md-3">
               <label className="form-label">Company Name</label>
               <input type="text" className="form-control" name="companyname" readOnly value={formData.companyname || "Loading..."} onChange={handleChange} style={{ width: "200px" }} />
@@ -582,7 +640,7 @@ const calculateFooter = () => {
               <label className="form-label">Company No</label>
               <input type="text" className="form-control" name="companyno" readOnly value={formData.companyno || "Loading..."} onChange={handleChange} style={{ width: "100px" }} />
             </div>  
-          </div> 
+          </div>  */}
           <div className="row mb-3">
              <div className="col-md-3">
               <label className="form-label">Invoice Date</label>
@@ -590,7 +648,7 @@ const calculateFooter = () => {
             </div>
             <div className="col-md-3">
               <label className="form-label">Invoice No</label>
-              <input type="text" className="form-control" name="invoiceno" value={formData.invoiceno||"Auto Generated"} readOnly onChange={handleChange} style={{ width: "250px" }} />
+              <input type="text" className="form-control" name="invoiceno" value={formData.invoiceno||"Auto Generated"} readOnly onChange={handleChange} style={{ width: "250px" }}  disabled/>
             </div>
             <div className="col-md-3">
             <label className="form-label">Customer Name</label>
@@ -618,7 +676,7 @@ const calculateFooter = () => {
           <div className="row mb-3">
             <div className="col-md-3">
               <label className="form-label">Reference No</label>
-              <input type="text" className="form-control" name="refrenceno" value={formData.referenceno}   onChange={handleChange} style={{ width: "150px" }} />
+              <input type="text" className="form-control" name="referenceno" value={formData.referenceno}   onChange={handleChange} style={{ width: "150px" }} />
             </div>
             <div className="col-md-3">
               <label className="form-label">Ref.Date </label>
@@ -697,7 +755,7 @@ const calculateFooter = () => {
           </div> 
         <div className="row mb-3">
            <div className="mb-9">
-            <label className="form-label">Remarks*</label>
+            <label className="form-label">Remarks</label>
             <textarea className="form-control" name="remarks"
                    value={formData.remarks} onChange={handleChange} rows={4} style={{ width: "775px" }} />
           </div>
@@ -760,39 +818,24 @@ const calculateFooter = () => {
             <td>
                 <Select
             options={itemOptions}
-            value={itemOptions.find(opt => opt.value === p.itemid) || null}
+             value={itemOptions.find(opt => Number(opt.value) === Number(p.itemid)) || null}
             onChange={(selected) => {
-              if (!selected) return;
-
-              // Required fields
-              handleInvDetailsChange(idx, "itemid", selected.value);   // maps to backend itemid
-              handleInvDetailsChange(idx, "uomid", selected.selling_uom); // required
-              handleInvDetailsChange(idx, "selling_price", selected.selling_price);
-              handleInvDetailsChange(idx, "invoiceqty", p.invoiceqty || 0); // keep current qty
-
-              // Optional fields
-              handleInvDetailsChange(idx, "productname", selected.label);
-              handleInvDetailsChange(idx, "productcode", selected.productcode);
-              handleInvDetailsChange(idx, "uomcode", selected.suom);
-
-              // Tax fields from item
-              handleInvDetailsChange(idx, "taxheaderid", selected.taxmasterid);
-              handleInvDetailsChange(idx, "taxname", selected.taxname);
-              handleInvDetailsChange(idx, "taxrate", selected.taxrate || 0);
-
-              // Recalculate amounts if needed
-              const invoiceamount = (p.invoiceqty || 0) * (selected.selling_price || 0);
-              handleInvDetailsChange(idx, "invoiceamount", invoiceamount);
-              handleInvDetailsChange(idx, "cgstamount", 0);
-              handleInvDetailsChange(idx, "sgstamount", 0);
-              handleInvDetailsChange(idx, "igstamount", 0);
-              handleInvDetailsChange(idx, "taxamount", 0);
-              handleInvDetailsChange(idx, "netamount", invoiceamount);
+              if (!selected) return; 
+              // Only set the essential item data
+                handleInvDetailsChange(idx, "itemid", selected.value);
+                handleInvDetailsChange(idx, "uomid", selected.selling_uom);
+                handleInvDetailsChange(idx, "productcode", selected.productcode);
+                handleInvDetailsChange(idx, "taxheaderid", selected.taxmasterid);
+                handleInvDetailsChange(idx, "taxname", selected.taxname);
+                
+                // This triggers ALL calculations (invoiceamount, tax, netamount, etc.)
+                handleInvDetailsChange(idx, "invoicerate", selected.selling_price);
+                
             }}
             placeholder="Select Item"
             isClearable
             isSearchable
-            className="w-400"
+            className="w-400" 
           />
 
             </td>
@@ -824,14 +867,22 @@ const calculateFooter = () => {
                 style={{width:"125px"}} required/>
             </td>
             <td>
-              <NumericFormat  value={ p.selling_price||"" } 
-                displayType="input"
-                thousandSeparator={true}
-                decimalScale={2}
-                fixedDecimalScale={true}
-                onValueChange={(values) => { const {floatValue} = values;
-                 handleInvDetailsChange(idx, "selling_price", floatValue||0)}}                  
-                style={{width:"125px"}} required/>
+            <NumericFormat
+              value={p.invoicerate ?? ""}  // display selling price
+              displayType="input"
+              thousandSeparator
+              decimalScale={2}
+              fixedDecimalScale
+              onValueChange={(values) => {
+                const { floatValue } = values;
+                // store in invoicerate for backend
+                handleInvDetailsChange(idx, "invoicerate", floatValue || 0);
+                // optional: also update selling_price so input stays in sync
+                handleInvDetailsChange(idx, "selling_price", floatValue || 0);
+              }}
+              style={{ width: "125px" }}
+              required
+            />
             </td>
             <td>
               <NumericFormat
@@ -861,7 +912,7 @@ const calculateFooter = () => {
             </select>
           </td> 
             <td>
-                <NumericFormat
+              <NumericFormat
               value={p.discount_amt_per}
               displayType="input"    // "input" for editable, "text" for read-only
               thousandSeparator={true}
@@ -875,7 +926,7 @@ const calculateFooter = () => {
             />
             </td>
             <td>
-                <NumericFormat
+             <NumericFormat
               value={p.afterdiscountamount}
               displayType="input"    // "input" for editable, "text" for read-only
               thousandSeparator={true}
@@ -926,12 +977,25 @@ const calculateFooter = () => {
           <td hidden><input type="text" value={p.sgstper} readOnly   /></td>
           <td hidden><input type="text" value={p.cgstper} readOnly /></td>
           <td hidden><input type="text" value={p.igstper} readOnly /></td>
-          <td hidden><input type="text" value={p.sgstamount} readOnly /></td>
-          <td hidden><input type="text" value={p.cgstamount} readOnly /></td>
-          <td hidden><input type="text" value={p.igstamount} readOnly /></td>
-          <td><input type="number" value={p.netamount}  style={{width:"125px"}} disabled /></td>
-        </tr>
-        ))}
+          <td hidden><input type="text" value={p.gsgstamount} readOnly /></td>
+          <td hidden><input type="text" value={p.gcgstamount} readOnly /></td>
+          <td hidden><input type="text" value={p.gigstamount} readOnly /></td>
+          <td>
+              <NumericFormat
+              value={p.netamount}
+              displayType="input"    // "input" for editable, "text" for read-only
+              thousandSeparator={true}
+              decimalScale={2}       // 2 decimal places
+              fixedDecimalScale={true}
+              onValueChange={(values) => {
+                const { floatValue } = values;
+                handleInvDetailsChange(idx, 'netamount', floatValue || 0);
+              }}
+              style={{width:"110px"}}
+            />
+            </td>
+              </tr>
+              ))}
         </tbody>
                 <tfoot className="table-secondary fw-bold">
           <tr>
@@ -944,7 +1008,13 @@ const calculateFooter = () => {
             <td>{totals.totalafterDiscAmt.toFixed(2)}</td>
             <td></td>
             <td></td>
-            <td>{totals.totalTax.toFixed(2)}</td>    
+            <td>{totals.totalTax.toFixed(2)}</td> 
+            <td hidden></td>   
+            <td hidden></td>
+            <td hidden></td>
+            <td hidden></td>
+            <td hidden></td>
+            <td hidden></td>
             <td>{totals.totalNet.toFixed(2)}</td>
           </tr>
         </tfoot>
@@ -1091,8 +1161,8 @@ const calculateFooter = () => {
           <input
             type="number"
             className="form-control"
-            name="netamount"
-            value={invfooter.netamount}
+            name="totnetamount"
+            value={invfooter.totnetamount}
             readOnly
             style={{ width: "140px" }}
           />
@@ -1106,6 +1176,16 @@ const calculateFooter = () => {
         <div className="mt-3 d-flex gap-2">
           <button type="submit" className="btn btn-primary" disabled={loading}><FaSave className="me-1" /> {loading ? "Saving.." : isEdit ? "Update" : "Save"}</button>
           <button type="button" className="btn btn-secondary" onClick={onClose} disabled={loading}><FaTimes className="me-1" /> Cancel</button>
+          {/* <PDFDownloadLink
+              document={<InvoicePDF data={pdfData} />}
+              fileName={`${formData.invoiceno}.pdf`}
+            >
+              {({ loading }) => (
+                <button type="button" disabled={loading}>
+                  {loading ? "Preparing PDF..." : "Download Invoice PDF"}
+                </button>
+              )}
+            </PDFDownloadLink> */}
         </div>
       </form>
 

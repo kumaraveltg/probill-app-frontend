@@ -25,7 +25,7 @@ function Invoice() {
     c.exrate,
     c.grossamount,
     c.taxamt,
-    c.netamount,
+    c.totnetamount,
     c.createdby,
     c.modifiedby,
     c.createdon,
@@ -35,8 +35,10 @@ function Invoice() {
   .toLowerCase()
   .includes(search.toLowerCase())
 );
+
 useEffect(() => {
     fetchInvoices(page * limit, limit);
+    console.log("fetch Data",invoice);
 }, [page,limit ]);
 
 //New UOM 
@@ -136,7 +138,7 @@ const handleDelete = async(id) => {
 </tr>
 ) : filteredInvoice.length === 0 ? (
 <tr>    
-    <td colSpan="9" className="text-center">No Customer found.</td>
+    <td colSpan="9" className="text-center">No Invoices found.</td>
 </tr>
 ) : (    
 filteredInvoice.map((i) => ( 
@@ -151,7 +153,7 @@ filteredInvoice.map((i) => (
         <td>{i.exrate}</td>
         <td>{i.grossamount}</td>
         <td>{i.taxamt}</td>
-        <td>{i.netamount}</td> 
+        <td>{i.totnetamount}</td> 
         <td>{i.createdby}</td>
         <td>{i.createdon}</td> 
         <td>{i.modifiedby}</td>
