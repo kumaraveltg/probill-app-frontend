@@ -6,11 +6,12 @@ import { AuthContext } from "../context/AuthContext";
 import { API_URL } from "../components/Config";
 import SearchModal from "../components/SearchModal";
 import DataContext, { useData } from "../context/DataContext";
-import { PDFDownloadLink } from "@react-pdf/renderer";
+import { PDFDownloadLink, PDFViewer } from "@react-pdf/renderer"
 import InvoicePDF from "./InvoicePDF";
+import { ar } from "date-fns/locale";
 
 
-function InvoiceForm({ onClose, onSaved, invoiceObject, setInvoiceObject, navigateToList, handleDelete }) {
+function InvoiceForm({ onClose, onSaved, invoiceObject, setInvoiceObject, navigateToList, handleDelete,invoiceno }) {
   const { invoice, companyname, companyno, companyid } = useContext(DataContext);
   const { acessToken, authFetch, username: ctxUsername, companyid: defaultcompanyid, companyno: defaultCompanyno } = useContext(AuthContext);
   const {  customer,fetchCustomer,items,fetchItems, companies,fetchCompanies,taxmaster,fetchTaxMaster,uoms,fetchUoms} = useData();
@@ -50,6 +51,10 @@ function InvoiceForm({ onClose, onSaved, invoiceObject, setInvoiceObject, naviga
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState("");
   const [selectAll, setSelectAll] = useState(false);
+  const [pdfHeader,setPdfHeader]= useState(null);
+  const [pdfDetails,setPdfDetails]= useState([])
+  const [pdfFooter,setPdfFooter]= useState([])
+  const [showPdfModal, setShowPdfModal] = useState(false);
 
   const fallbackParams = JSON.parse(localStorage.getItem("globalParams") || "{}");
   const uname = ctxUsername || fallbackParams.username || "admin";
@@ -62,7 +67,10 @@ function InvoiceForm({ onClose, onSaved, invoiceObject, setInvoiceObject, naviga
   const itemOptions = useMemo(() => items.map(tm => ({ value  : tm.id, label: tm.productname, productcode: tm.productcode, selling_uom: tm.selling_uom,suom: tm.suom,taxmasterid: tm.taxmasterid,taxname:tm.taxname,taxrate:tm.taxrate ,selling_price:tm.selling_price})), [items]);
   const uomOptions = useMemo(() => uoms.map(tm => ({ value: tm.id, label: tm.uomcode})), [uoms]);
   const taxOptions = useMemo(() => (taxmaster || []).map(tm => ({ value: tm.id, label: tm.taxname,taxrate :tm.taxrate})), [taxmaster]);
-  
+  const discountOptions = [
+  { value: "Percentage", label: "Percentage" },
+  { value: "Lumpsum", label: "Lumpsum" },
+];
  // Fetch companies, items, uoms, taxmaster only once when companies are empty
 useEffect(() => {
     if (!companies.length) {
@@ -129,9 +137,9 @@ useEffect(() => {
         invoiceamount:
          p.invoiceamount || 0
           /*(p.invoiceqty || 0) * (p.invoicerate || matchedItem?.selling_price || 0)*/,
-
-        discount_amt_per: p.discount_amt_per || 0,
-        afterdiscountamount: parseFloat(Number(p.afterdiscountamount).toFixed(2)) || 0,
+        discounttype: p.discounttype ?? "",  
+        discount_amt_per: p.discount_amt_per != null ? parseFloat(Number(p.discount_amt_per).toFixed(2)) : 0,
+        afterdiscountamount: p.afterdiscountamount != null ? parseFloat(Number(p.afterdiscountamount).toFixed(2)) : 0,
         taxamount: p.taxamount || 0,
         netamount: parseFloat(p.netamount) || 0,
 
@@ -341,21 +349,22 @@ const handleInvDetailsChange = (index, field, value) => {
       row.invoiceamount = qty*rate;
  
     console.log(`Row ${index} invoiceqty: ${row.invoiceqty}, invoicerate: ${row.invoicerate}, invoiceamount: ${row.invoiceamount}`);
+    
     // 🧮 Discount calculation
     const amount = row.invoiceamount || 0;
     const disc = row.discount_amt_per || 0;
 
     if (row.discounttype === "Percentage") {
-      row.afterdiscountamount = amount - (amount * disc) / 100;
+      row.afterdiscountamount = (amount * disc) / 100;
     } else if (row.discounttype === "Lumpsum") {
-      row.afterdiscountamount = amount - disc;
+      row.afterdiscountamount =  disc;
     } else {
       row.afterdiscountamount = amount;
     }
 
     // 🧾 Apply tax breakup based on supply type
     const taxRate = row.taxrate || 0;
-    const afterDiscAmt = row.afterdiscountamount || 0;
+    const afterDiscAmt = (row.invoiceamount - row.afterdiscountamount) ?? 0;
 
     row.taxamount = (afterDiscAmt * taxRate) / 100;
 
@@ -515,7 +524,7 @@ const calculateFooter = () => {
       referenceno: formData.referenceno || " ",
       referencedate: formData.referencedate ,
       currencyid: formData.currencyid,
-      exrate: 1.0,
+      exrate: formData.exrate,
       supplytype: formData.supplytype,
       remarks: formData.remarks || " ",
       grossamount: invfooter.grossamount || 0,
@@ -541,7 +550,7 @@ const calculateFooter = () => {
         selling_price: c.selling_price || c.invoicerate, // show selling price
         invoicerate: c.invoicerate || c.selling_price,   // post as invoicerate
         invoiceamount: c.invoiceamount || 0,
-        discounttype: c.discounttype || null,
+        discounttype: c.discounttype || "",
         discount_amt_per: c.discount_amt_per || 0,
         afterdiscountamount:c.afterdiscountamount,
         taxheaderid: c.taxheaderid || null,
@@ -613,8 +622,117 @@ const calculateFooter = () => {
     }
   };
 
+  
 
+  useEffect(() => {
+    if (!formData.invoiceno || formData.invoiceno === "Auto Generated" || !isEdit) {
+      setPdfHeader(null);
+      setPdfDetails([]);
+      return;
+    }
 
+    let isMounted = true;
+
+    const fetchPDFData = async () => {
+      try {
+        const hdrRes = await fetch(`${API_URL}/getinvpdfhdr?invoiceno=${encodeURIComponent(formData.invoiceno)}`);
+        if (!hdrRes.ok) throw new Error("Failed to fetch invoice header");
+        const hdrData = await hdrRes.json();
+
+        const dtlRes = await fetch(`${API_URL}/getinvdtlpdf?invoiceno=${encodeURIComponent(formData.invoiceno)}`);
+        if (!dtlRes.ok) throw new Error("Failed to fetch invoice details");
+        const dtlData = await dtlRes.json();
+        
+        const footRes = await fetch(`${API_URL}/getinvfooterpdf?invoiceno=${encodeURIComponent(formData.invoiceno)}`);
+        if (!dtlRes.ok) throw new Error("Failed to fetch invoice Footer");
+        const footData = await footRes.json();
+
+        if (isMounted) {
+          setPdfHeader(hdrData?.[0] || null);
+          setPdfDetails(Array.isArray(dtlData) ? dtlData : []);
+          setPdfFooter(Array.isArray(footData) ? footData : []);
+        }
+      } catch (err) {
+        console.error("Error loading invoice PDF data:", err);
+        if (isMounted) {
+          setPdfHeader(null);
+          setPdfDetails([]);
+          setPdfFooter([]);
+        }
+      }
+    };
+
+  fetchPDFData();
+
+  return () => {
+    isMounted = false;
+  };
+  }, [formData.invoiceno, isEdit, API_URL]);
+   
+ 
+  // Map backend data to PDF format
+   
+const pdfData = pdfHeader && pdfDetails && pdfDetails.length > 0 ? {
+    company: {
+      name: pdfHeader?.companyname || "",
+      address: pdfHeader?.adress || "",
+      gstin: pdfHeader?.gstno || "",
+    },
+    invoice: {
+      no: pdfHeader?.invoiceno || "",
+      date: pdfHeader?.invoicedate || "",
+      customer: pdfHeader?.customername || "",
+      place: pdfHeader?.placeof_supply || "",
+      gstRate: pdfHeader?.taxrate || 0,
+      customername: pdfHeader?.customername || "",
+      add1: pdfHeader?.address1 || "",
+      add2: pdfHeader?.address2 || "",
+      city: pdfHeader?.cityname || "",
+      state: pdfHeader?.statename || "",
+      pincode: pdfHeader?.pincode || "",
+      cgstin: pdfHeader?.customergstin || "",
+      currencycode: pdfHeader?.currencycode || "",
+      exrate: pdfHeader?.exrate || 1,
+      sadd1: pdfHeader?.shipping_address1 || "",
+      sadd2: pdfHeader?.shipping_address2 || "",
+      scity: pdfHeader?.shipping_cityname || "",
+      sstate: pdfHeader?.shipping_statename || "",
+      spincode: pdfHeader?.shipping_pincode || "",
+    },
+    items: Array.isArray(pdfDetails) ? pdfDetails.map((d) => ({
+      desc: d?.productname || d?.productcode || "-",
+      qty: d?.invoiceqty || 0,
+      rate: d?.invoicerate || 0,
+      amount: d?.invoiceamount || 0,
+      distype: d?.discounttype || "",
+      disamt: d?.discount_amt_per || 0,
+      uom: d?.uomcode || "",
+      dicamt: d?.afterdiscountamount || 0,
+      taxname: d?.taxname || "",
+      taxrate: d?.taxrate || 0,
+      cgstper: d?.cgstper || 0,
+      sgstper: d?.sgstper || 0,
+      igstper: d?.igstper || 0,
+      cgstamt: d?.gcgstamount || 0,
+      sgstamt: d?.gsgstamount || 0,
+      igstamt: d?.gigstamount || 0,
+      taxamt: d?.taxamount || 0,
+      netamt: d?.netamount || 0,
+    })) : [],
+    fsub: Array.isArray(pdfFooter) ? pdfFooter.map((f) => ({
+      fcaption: f?.taxslabname || "", 
+      famt: f?.footeramt || 0,
+    }) ) : [] , 
+  } : null;
+
+const handleOpenPdf = () => {
+  const blob = pdf(<InvoicePDF data={pdfData} />).toBlob(); // create a blob from your PDF
+  blob.then((pdfBlob) => {
+    const url = URL.createObjectURL(pdfBlob);
+    window.open(url, "_blank"); // opens PDF in a new tab
+  });
+};
+ 
   return (
     <div className="card w-100">
       {message && <div className="alert alert-danger mt-2">{message}</div>}
@@ -899,30 +1017,35 @@ const calculateFooter = () => {
             />
             </td>          
             <td>
-            <select
-              className="form-select"
-              value={p.discounttype}
-              onChange={(e) => handleInvDetailsChange(idx, "discounttype", e.target.value)}
-              style={{width:"150px"}}
-            >
-              <option value="">--Select--</option>
-              <option value="Percentage">Percentage</option>
-              <option value="Lumpsum">Lumpsum</option>
-              
-            </select>
+            <Select
+                options={discountOptions}
+                value={discountOptions.find(opt => opt.value === p.discounttype) || null}
+                onChange={(selected) => {
+                  if (!selected) return;
+
+                  // Update discount type in your state
+                  handleInvDetailsChange(idx, "discounttype", selected.value||"");
+
+                  // Recalculate after discount amount
+                  handleInvDetailsChange(idx, "discount_amt_per", p.discount_amt_per || 0);
+                }}
+                placeholder="Disc.Type"
+                isClearable={false}
+                className="w-150"
+              />
           </td> 
             <td>
               <NumericFormat
-              value={p.discount_amt_per}
-              displayType="input"    // "input" for editable, "text" for read-only
+              value={p.discount_amt_per || ""}
+              displayType="input"
               thousandSeparator={true}
-              decimalScale={2}       // 2 decimal places
+              decimalScale={2}
               fixedDecimalScale={true}
               onValueChange={(values) => {
                 const { floatValue } = values;
-                handleInvDetailsChange(idx, 'discount_amt_per', floatValue || 0);
+                handleInvDetailsChange(idx, "discount_amt_per", floatValue || 0);
               }}
-              style={{width:"110px"}}
+              style={{ width: "125px" }}
             />
             </td>
             <td>
@@ -1176,18 +1299,42 @@ const calculateFooter = () => {
         <div className="mt-3 d-flex gap-2">
           <button type="submit" className="btn btn-primary" disabled={loading}><FaSave className="me-1" /> {loading ? "Saving.." : isEdit ? "Update" : "Save"}</button>
           <button type="button" className="btn btn-secondary" onClick={onClose} disabled={loading}><FaTimes className="me-1" /> Cancel</button>
-          {/* <PDFDownloadLink
-              document={<InvoicePDF data={pdfData} />}
-              fileName={`${formData.invoiceno}.pdf`}
-            >
-              {({ loading }) => (
-                <button type="button" disabled={loading}>
-                  {loading ? "Preparing PDF..." : "Download Invoice PDF"}
-                </button>
-              )}
-            </PDFDownloadLink> */}
+       {pdfData ? (
+  <>
+    {/* Preview PDF Button */}
+    <button
+      type="button"
+      className="btn btn-primary"
+      disabled={!pdfData}
+      onClick={() => setShowPdfModal(true)}
+    >
+      Preview PDF
+    </button>
+
+    {/* Download PDF Button */}
+    <PDFDownloadLink
+      document={<InvoicePDF data={pdfData} />}
+      fileName={`Invoice-${pdfData?.invoice?.no}.pdf`}
+      className="btn btn-success ms-2" // Add spacing with ms-2
+    >
+      {({ loading }) => (loading ? "Preparing PDF..." : "Download PDF")}
+    </PDFDownloadLink>
+        </>
+      ) : (
+        <p className="text-muted mt-4">PDF preview will appear after saving the invoice.</p>
+      )}
         </div>
       </form>
+      {showPdfModal && pdfData && (
+        <div style={{ position: "fixed", top: 0, left: 0, width: "100%", height: "100%", background: "#00000066", zIndex: 9999 }}>
+          <div style={{ width: "70%", height: "70%", margin: "5% auto", background: "#fff", padding: "10px", borderRadius: "5px" }}>
+            <PDFViewer width="100%" height="100%">
+              <InvoicePDF data={pdfData} />
+            </PDFViewer>
+            <button className="btn btn-danger mt-2" onClick={() => setShowPdfModal(false)}>Close</button>
+          </div>
+        </div>
+      )}
 
       <SearchModal
         show={showModal}
