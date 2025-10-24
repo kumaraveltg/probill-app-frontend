@@ -23,6 +23,7 @@ export const DataProvider = ({ children }) => {
   const [customer,setCustomer]= useState([])
   const [currencies, setCurrencies] = useState([]); 
   const [invoice,setInvoice]= useState([]);
+  const [receipts,setReceipts]= useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const limit = 10;
@@ -393,12 +394,37 @@ const fetchCustomer = useCallback(async(skip=0,limit=50) => {
     }
   }, [companyid,authFetch,accessToken]);
 
+  const fetchReceipts = useCallback(async (skip=0,limit=100) => {
+    if(!companyid) {
+      console.error("Company Id is not avaialble");
+      return;
+    } 
+    console.log("AccessToken",accessToken);
+      try {
+        setLoading(true);
+        const res = await authFetch(`${API_URL}/receiptslist/${companyid}?skip=${skip}&limit=${limit}`,
+          { headers: {"Authorization": `Bearer ${accessToken}`}
+          } 
+        );
+        if(!res.ok) throw new Error(`HTTP Error ${res.status}`);
+        const data = await res.json();
+        console.log("Fetch Receipt Data:",data); 
+        setReceipts(data.receipts_list||[]);
+        setTotal(data.total || 0);
+      } catch (err) {
+        setError(err.message);
+      }
+      finally {
+        setLoading(false);
+      } 
+    }, [companyid,authFetch,accessToken]);
+
 
  //✅ Initial data load - only when accessToken is available
   useEffect(() => {
     if (accessToken) {
       const fetchData = async () => {   
-        await fetchInvoices(0, 100); 
+        await fetchReceipts(0, 100); 
       }; 
       fetchData();
     }
@@ -432,7 +458,8 @@ const fetchCustomer = useCallback(async(skip=0,limit=50) => {
         error,
         total,
         companyid,busers,fetchUsers,userRole,fetchUserRole,finyr,fetchFinyr,taxmaster,fetchTaxMaster,
-        items,fetchItems,test,hsn,fetchHsn,customer,fetchCustomer,currencies,fetchCurrencies,invoice,fetchInvoices
+        items,fetchItems,test,hsn,fetchHsn,customer,fetchCustomer,currencies,fetchCurrencies,
+        invoice,fetchInvoices,receipts,fetchReceipts
       }}
     >
       {children}

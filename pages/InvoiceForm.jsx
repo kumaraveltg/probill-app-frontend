@@ -364,7 +364,7 @@ const handleInvDetailsChange = (index, field, value) => {
 
     // 🧾 Apply tax breakup based on supply type
     const taxRate = row.taxrate || 0;
-    const afterDiscAmt = (row.invoiceamount - row.afterdiscountamount) ?? 0;
+    const afterDiscAmt = (row.invoiceamount - row.afterdiscountamount)|| 0;
 
     row.taxamount = (afterDiscAmt * taxRate) / 100;
 

@@ -23,6 +23,7 @@ import Test from  "../pages/Test.jsx"
 import Hsn from "../pages/Hsn.jsx";
 import Customer from "../pages/Customer.jsx";
 import Invoice from "../pages/Invoice.jsx"
+import Receipts from "../pages/Receipts.jsx";
 
 
 // Protected route component
@@ -62,6 +63,7 @@ function App() {
               <Route path="hsn" element={<Hsn />} />
               <Route path="customer" element={<Customer />} />
               <Route path="invoice" element={<Invoice />} />
+              <Route path="receipts" element={<Receipts />} />
             </Route>
              {/* Default root goes to /login */}
             <Route path="/" element={<Navigate to="/login" replace />} />            
