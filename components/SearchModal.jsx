@@ -37,6 +37,8 @@ function SearchModal({ show, onClose, apiUrl, columns, searchFields, onSelect })
     return () => clearTimeout(delayDebounce);
   }, [search, field, apiUrl]);
 
+  
+
   return (
     <Modal show={show} onHide={onClose} size="lg">
       <Modal.Header closeButton>
@@ -83,7 +85,7 @@ function SearchModal({ show, onClose, apiUrl, columns, searchFields, onSelect })
           </thead>
           <tbody>
             {data.map((item,rowIndex) => (
-              <tr key={item.id||rowIndex}>
+              <tr key={`${item.id}-${rowIndex}`}>
                 {columns.map((col) => (
                   <td key={`${item.id||rowIndex}-${col.field}`}>
                     {col.render ? col.render(item[col.field], item) : item[col.field]}

@@ -2,7 +2,7 @@
  import { useState,useEffect,useContext } from 'react';
  import  DataContext   from '../context/DataContext';
  import { API_URL } from '../components/Config';
-  import Select from 'react-select';
+ import Select from 'react-select';
  import SearchModal from '../components/SearchModal';
  import { useMemo } from 'react';
  import ModalOpen from '../components/ModalOpen';
@@ -291,7 +291,7 @@ function CityForm({ cityValueEdit, onClose, onSaved, navigateToList, handleDelet
                   isSearchable
                   required
                   filterOption={(option, inputValue) =>
-                    option.label.toLowerCase().startsWith(inputValue.toLowerCase())
+                  option.label.toLowerCase().startsWith(inputValue.toLowerCase())
                   }                  
                 />
               </div>

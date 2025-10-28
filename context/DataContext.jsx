@@ -44,8 +44,9 @@ export const DataProvider = ({ children }) => {
 
     if (!res.ok) throw new Error(`HTTP Error ${res.status}`);
 
-    const data = await res.json();
-    setCountries(data.sort((a, b) => a.countryname.localeCompare(b.countryname)));
+    const data = await res.json(); 
+    setCountries(data.country_list);
+    setTotal(data.total || 0);  
   } catch (err) {
     setError(err.message);
   } finally {

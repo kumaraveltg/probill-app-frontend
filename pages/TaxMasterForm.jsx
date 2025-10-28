@@ -332,7 +332,7 @@ useEffect(() => {
        <form onSubmit={handleSubmit}>
       <header className="card p-3 border border-secondary w-100 mt-2" style={{ backgroundColor: "#ebe6e6ff" }}>
         <div className="row mb-3">
-         <div className="col-md-3">
+         {/* <div className="col-md-3">
           <label className="form-label">Company Name</label>
           <input type="text" className="form-control" name="companyname"
           readOnly
@@ -343,7 +343,7 @@ useEffect(() => {
           <input type="text" className="form-control" name="companyno"
           readOnly
                  value={formData.companyno} onChange={handleChange} style={{ width: "100px" }} />
-        </div>
+        </div> */}
          <div className="col-md-2">
           <label className="form-label">Tax Type</label>
           <input type="text" className="form-control" name="taxtype"
@@ -359,14 +359,15 @@ useEffect(() => {
           <label className="form-label">Tax Rate</label>
           <input type="number" className="form-control" name="taxrate"
                  value={formData.taxrate||0} onChange={handleChange} style={{ width: "100px" }} />
-        </div> 
-        </div>
+        </div>  
 
-        <div className="form-check mb-3">
+        <div className="col-md-2">
+          <br /> 
           <input type="checkbox" className="form-check-input" name="active"
                  checked={formData.active} onChange={handleChange} />
           <label className="form-check-label">Active</label>
         </div>
+         </div>
       </header>
 
       {/* ===== PERIODS GRID ===== */}

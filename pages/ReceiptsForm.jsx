@@ -16,8 +16,7 @@ import DataContext, { useData } from "../context/DataContext";
   handleNew,
   fetchReceipts,
   navigateToList,
-  receiptno,
-   receiptsObject, setReceiptsObject,
+  receiptno, 
 }) {
  
  
@@ -25,6 +24,8 @@ import DataContext, { useData } from "../context/DataContext";
   const { companies,fetchCompany,customer, fetchCustomer,invoices,fetchInvoices,currencies,fetchCurrencies} = useData();
   const { invoice, companyname, companyno, companyid } = useContext(DataContext);
   const { acessToken, authFetch, username: ctxUsername, companyid: defaultcompanyid, companyno: defaultCompanyno } = useContext(AuthContext);
+  const [receiptsObject, setReceiptsObject] = useState(null);
+  const [error, setError] = useState("");
   const [isEdit, setIsEdit] = useState(false);
   const [activeTab, setActiveTab] = useState("gridData");
   const [gridData, setGridData] = useState([{ 
@@ -354,16 +355,41 @@ const fetchReceiptDetails = useCallback(async (receiptheaderid) => {
 
 
   const updateTotals = (grid) => {
-    const totalAmount = grid.reduce((sum, row) => sum + parseFloat(row.greceiptamount || 0), 0);
-    const balanceAmount = grid.reduce((sum, row) => 
-      sum + (parseFloat(row.invoiceamount || 0) - parseFloat(row.greceiptamount || 0)), 0
-    );
-    
-    setTotals({
-      totalAmount,
-      balanceAmount
-    });
-  };
+  if (!Array.isArray(grid)) return;
+
+  let totalAmount = 0;
+  let balanceAmount = 0;
+
+  grid.forEach((row) => {
+    const receipt = parseFloat(row?.greceiptamount || 0);
+    const invoiceAmt = parseFloat(row?.invoiceamount || 0);
+
+    totalAmount += isNaN(receipt) ? 0 : receipt;
+    balanceAmount += isNaN(invoiceAmt) || isNaN(receipt) ? 0 : invoiceAmt - receipt;
+  });
+
+  setTotals({
+    totalAmount: parseFloat(totalAmount.toFixed(2)),
+    balanceAmount: parseFloat(balanceAmount.toFixed(2)),
+  });
+
+  // Validation: total receipt must match sum of grid greceiptamount
+  if (grid.length > 0) {
+    const totalDetails = grid.reduce((sum, r) => {
+      const amt = parseFloat(r?.greceiptamount || 0);
+      return sum + (isNaN(amt) ? 0 : amt);
+    }, 0);
+    const receiptAmt = parseFloat(formData?.receiptamount || 0);
+    console.log("Validating totals:", receiptAmt, totalDetails);
+    if (Math.abs(totalAmount - receiptAmt) > 0.01) {
+      setError("Receipt total must match sum of details.");
+    } else {
+      setError(null);
+    }
+  } else {
+    setError(null); // No rows → clear error
+  }
+};
 
 // select toggle select for delete grid row
   const toggleSelect = (idx) => {
@@ -407,7 +433,7 @@ const fetchReceiptDetails = useCallback(async (receiptheaderid) => {
         companyid: formData.companyid,
         companyno:  cno || "",
         receiptno: formData.receiptno,
-        receiptdate: formData.receiptdate, 
+        receiptdate: convertDate(formData.receiptdate), 
         receipttype: formData.receipttype, 
         customerid: formData.customerid,
         currencyid: formData.currencyid,
@@ -416,16 +442,17 @@ const fetchReceiptDetails = useCallback(async (receiptheaderid) => {
         receiptamount: formData.receiptamount, 
         paymentmode: formData.paymentmode,
         transactionno: formData.transactionno,
-        transactiondate: formData.transactiondate||null,
+        transactiondate: convertDate(formData.transactiondate)||null,
         chequeno: formData.chequeno,
-        cheqedate: formData.cheqedate||null,        
+        cheqedate: convertDate(formData.cheqedate)||null,        
         remarks: formData.remarks,
+        totalreceiptamount: totals.totalAmount,
         createdby: formData.createdby,
         modifiedby: formData.modifiedby,
 
         receipt_details: gridData.map(row => ({  
           invoiceno: row.invoiceno,
-          invoicedate: row.invoicedate,
+          invoicedate: convertDate(row.invoicedate),
           invoiceamount: row.invoiceamount,
           gcurrency: row.gcurrency,
           exrate: row.gexrate,
@@ -473,16 +500,15 @@ const fetchReceiptDetails = useCallback(async (receiptheaderid) => {
     }
   };
 
-  
   return (
     <div className="card w-100">
       {message && <div className="alert alert-danger mt-2">{message}</div>}
       <div className="d-flex justify-content-between align-items-center w-100" style={{ backgroundColor: "#ebe6e6ff", border: "1px solid #ced4da", borderRadius: "5px" }}>
         <h4 className="mb-0">{formData.id ? 'Edit Receipt' : 'New Receipt'}</h4>
         <div className="btn-toolbar gap-2" role="toolbar">
-          <button type="button" className="btn btn-secondary" onClick={() => { setFormData(prev => ({ ...prev, id: null })); }}><i className="bi bi-plus-lg"></i></button>
+          <button type="button" className="btn btn-secondary" onClick={resetForm}><i className="bi bi-plus-lg"></i></button>
           <button type="button" className="btn btn-secondary" onClick={handleDeleteClick}><i className="bi bi-dash-lg"></i></button>
-          <button type="button" className="btn btn-secondary" onClick={() => { setFormData(prev => ({ ...prev })); }}><i className="bi bi-search"></i></button>
+          <button type="button" className="btn btn-secondary" onClick={() => setShowModal(true)} ><i className="bi bi-search"></i></button>
           <button type="button" className="btn btn-secondary" onClick={() => navigateToList?.()}><i className="bi bi-list"></i></button>
         </div>
       </div>
@@ -502,7 +528,7 @@ const fetchReceiptDetails = useCallback(async (receiptheaderid) => {
           <div className="row mb-3">
              <div className="col-md-3">
               <label className="form-label">Receipt Date</label>
-              <input type="date" className="form-control" name="receiptdate" value={formData.receiptdate}  onChange={handleChange} style={{ width: "150px" }} required />
+              <input type="date" className="form-control" name="receiptdate" value={convertDate(formData.receiptdate)}  onChange={handleChange} style={{ width: "150px" }} required />
             </div>
             <div className="col-md-3">
               <label className="form-label">Receipt No</label>
@@ -603,7 +629,7 @@ const fetchReceiptDetails = useCallback(async (receiptheaderid) => {
             </div>
             <div className="col-md-3">
               <label className="form-label">Transaction.Date </label>
-              <input type="date" className="form-control" name="transactiondate" value={formData.transactiondate}   onChange={handleChange} style={{ width: "150px" }} />
+              <input type="date" className="form-control" name="transactiondate" value={convertDate(formData.transactiondate)}   onChange={handleChange} style={{ width: "150px" }} />
             </div> 
             <div className="col-md-3">
             <label className="form-label">Chequeno</label>
@@ -611,7 +637,7 @@ const fetchReceiptDetails = useCallback(async (receiptheaderid) => {
             </div>
             <div className="col-md-3">
               <label className="form-label">Cheque.Date </label>
-              <input type="date" className="form-control" name="cheqedate" value={formData.cheqedate}   onChange={handleChange} style={{ width: "150px" }} />
+              <input type="date" className="form-control" name="cheqedate" value={convertDate(formData.cheqedate)}   onChange={handleChange} style={{ width: "150px" }} />
             </div>    
           </div> 
         <div className="row mb-3">
@@ -694,7 +720,7 @@ const fetchReceiptDetails = useCallback(async (receiptheaderid) => {
               />
               </td>
               <td> 
-                <input type="date" className="form-control" value={row.invoicedate} readOnly />
+                <input type="date" className="form-control" value={convertDate(row.invoicedate)} readOnly />
               </td>
               <td>
                 <NumericFormat 
@@ -781,8 +807,7 @@ const fetchReceiptDetails = useCallback(async (receiptheaderid) => {
       </table>
     </div>
     </div>
-        )}
-
+        )} 
         {activeTab === "totals" && (
           <div className="receipt-footer">
             <div className="row mb-3">
@@ -795,11 +820,13 @@ const fetchReceiptDetails = useCallback(async (receiptheaderid) => {
                 <input type="number" className="form-control" value={totals.balanceAmount} readOnly />
               </div>
             </div>
-          </div>
+            {error && (<div className="alert alert-danger">{error}</div>)}
+          </div> 
         )}
+        
 
         <div className="d-flex gap-2 mt-3">
-          <button type="submit" className="btn btn-primary" disabled={loading}>
+          <button type="submit" className="btn btn-primary" disabled={loading||!!error}>
           <FaSave className="me-1" /> {loading ? 'Saving..' : formData.id ? 'Update' : 'Save'}
         </button>
           <button type="button" className="btn btn-secondary" onClick={onClose} disabled={loading}>
@@ -812,8 +839,8 @@ const fetchReceiptDetails = useCallback(async (receiptheaderid) => {
      <SearchModal
         show={showModal}
         onClose={() => setShowModal(false)}
-        apiUrl={`${API_URL}/receiptsearch/${defaultcompanyid}`}
-        columns={[
+        apiUrl={`${API_URL}/receiptssearch/${defaultcompanyid}`} 
+          columns={[
           { field: "receiptno", label: "Receipt No." },
           { field: "customername", label: "Customer Name" },
           { field: "invoiceno", label: "Invoice No"},
@@ -827,7 +854,7 @@ const fetchReceiptDetails = useCallback(async (receiptheaderid) => {
           setFormData({ ...fin });
           setReceiptsObject(fin);
           setIsEdit(true);
-          setShowModal(false);
+          setShowModal(false); 
         }}
       />
       

@@ -1,8 +1,7 @@
 import { useState,useContext,useEffect } from "react";
 import { FaPlus, FaSearch } from "react-icons/fa"; 
 import { API_URL } from "../components/Config"; 
-import CurrencyForm from "./CurrencyForm.jsx";
-import { useNavigate } from "react-router-dom";
+import CurrencyForm from "./CurrencyForm.jsx"; 
 import DataContext from "../context/DataContext.jsx";
 
 function Currency() {
@@ -18,6 +17,7 @@ function Currency() {
     c.id,
     c.currencycode,
     c.currencyname,
+    c.symbol,
     c.active ? "Yes" : "No",     
     c.createdby,
     c.modifiedby,
@@ -57,161 +57,178 @@ const handleDelete = async(id) => {
         fetchCurrencies(page * limit, limit);
     }   
     else {
-        console.error("Failed to delete UOM");
+        console.error("Failed to delete Currency");
     }
  }  catch(err){
-    console.error("Error deleting UOM:", err);
+    console.error("Error deleting Currency:", err);
  }
 };
-    return (    
-        <div className="container-fluid">
-        <div className="d-flex justify-content-between align-items-center my-3">
-          <h2>Currency</h2>
-         </div>  
-        {!showForm ? (
-        <>
+    return (
+  <div className="container-fluid px-0 py-0">
+    {!showForm ? (
+      <>
+        <div className="d-flex justify-content-between align-items-center mt-0 mb-0">
         <div className="row mb-3 align-items-center">
-            {/* Search box */}
-            <div className="col-md-8">
-                <div className="input-group">
-                <span className="input-group-text bg-primary text-white">
-                    <FaSearch />
-                </span>
-                <input
-                    type="text"
-                    className="form-control"
-                    placeholder="Search Tax..."
-                    value={search}
-                    onChange={(e) => setSearch(e.target.value)}
-                />
-                </div>
+            <div className="col-md-3">
+            <h2>Currency</h2>
+          </div>
+        </div>
+          {/* Search box */}
+          <div className="col-md-6">
+            <div className="input-group">
+              <span className="input-group-text bg-primary text-white">
+                <FaSearch />
+              </span>
+              <input
+                type="text"
+                className="form-control"
+                placeholder="Search Tax..."
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+              />
             </div>
+          </div>
 
-            {/* Button */}
-            <div className="col-md-4 text-end">
-                <button className="btn btn-primary" onClick={handleNew}>
-                <FaPlus className="me-2" />
-                New Currency
-                </button>
-            </div>
-            </div>
-<div style={{ maxHeight: "500px", overflowY: "auto" }}>   
-<table className="table table-bordered table-hover">        
-<thead className="table-light">
-<tr> 
-<th>Currency Code</th>
-<th>Currency Name</th>   
-<th>Active</th>
-<th>Created By</th>
-<th>Created On</th> 
-<th>Modified By</th>
-<th>Modified On</th>
-<th>Actions</th>
-</tr>   
-</thead>
-<tbody>
-{Loading ? (    
-<tr>
-    <td colSpan="9" className="text-center">Loading...</td>
-</tr>   
-) : error ? (
-<tr>
-    <td colSpan="9" className="text-center text-danger">Error: {error}</td>     
-</tr>
-) : filteredCurrency.length === 0 ? (
-<tr>    
-    <td colSpan="9" className="text-center">No Currency found.</td>
-</tr>
-) : (    
-filteredCurrency.map((cur) => ( 
-    <tr key={cur.id}>   
-        <td>{cur.currencycode}</td>
-        <td>{cur.currencyname}</td>  
-        <td>{cur.active ? "Yes" : "No"}</td>
-        <td>{cur.createdby}</td>
-        <td>{cur.createdon}</td> 
-        <td>{cur.modifiedby}</td>
-        <td>{cur.modifiedon}</td>
-        <td>
-            <button 
-                className="btn btn-sm btn-primary me-2" 
-                onClick={() => setCurrencyObject(cur)}
-            >
-                <i className="bi bi-pencil"></i> 
+          {/* Button */}
+          <div className="col-md-3 text-end">
+            <button className="btn btn-primary" onClick={handleNew}>
+              <FaPlus className="me-2" />
+              New Currency
             </button>
-            <button 
-                className="btn btn-sm btn-danger"
-                onClick={() => handleDelete(cur.id)}
-            >
-                <i className="bi bi-trash3"></i>
-            </button>   
-        </td>
-    </tr>    
-))  
-)}
-</tbody>
-</table>
-</div>
-<div className="d-flex justify-content-between align-items-center my-3"
->    
-    <div>Total Currencies: {total}</div>
-   <label>
-    Rows:
-      <select
-        value={limit}
-        onChange={(e) => {
-          setLimit(Number(e.target.value));
-          setPage(0);
-        }}
-        className="form-select form-select-sm d-inline-block ms-1"
-        style={{ width: "70px" }}
-      >
-        <option value={10}>10</option>
-        <option value={25}>25</option>
-        <option value={100}>100</option>
-        <option value={500}>500</option>
-      </select>
-    </label>
-    <div>
-        <button 
-            className="btn btn-secondary me-2"
-            onClick={() => setPage((p) => Math.max(p - 1, 0))}
-            disabled={page === 0}
-        >
-            Previous
-        </button>
-        <span>Page {page + 1}</span>
-        <button
-            className="btn btn-secondary ms-2"
-            onClick={() => setPage((p) => (total > (p + 1) * limit ? p + 1 : p))}
-            disabled={(page + 1) * limit >= total}
-        >
-            Next
-        </button>
-    </div>
-</div>
-</>     
-        ) : (
-        <CurrencyForm
-            currencyObject={currencyObject}
-            setCurrencyObject={setCurrencyObject}
-            onClose={() => { setShowForm(false);
-                 setCurrencyObject(null); 
-                 fetchCurrencies(page * limit, limit); }
-                }
-            fetchCurrencies={fetchCurrencies}
-            navigateToList={() => { setShowForm(false);
-                 setCurrencyObject(null); 
-                 fetchCurrencies(page * limit, limit); }
-                }
-            handleDelete={handleDelete}
-            handleNew={handleNew} 
-            onSaved={handleUomSaved}  
-            
-        />
-        )} 
-        </div>    
-    );                
+          </div>
+        </div>
 
+        {/* Table */}
+        <div style={{ maxHeight: "500px", overflowY: "auto" }}>
+          <table className="table table-bordered table-hover">
+            <thead className="table-light">
+              <tr>
+                <th></th>
+                <th>Currency Code</th>
+                <th>Currency Name</th>
+                <th>Symbol</th>
+                <th>Active</th>
+                <th>Created By</th>
+                <th>Created On</th>
+                <th>Modified By</th>
+                <th>Modified On</th>
+                <th> </th>
+              </tr>
+            </thead>
+            <tbody>
+              {Loading ? (
+                <tr>
+                  <td colSpan="9" className="text-center">
+                    Loading...
+                  </td>
+                </tr>
+              ) : error ? (
+                <tr>
+                  <td colSpan="9" className="text-center text-danger">
+                    Error: {error}
+                  </td>
+                </tr>
+              ) : filteredCurrency.length === 0 ? (
+                <tr>
+                  <td colSpan="9" className="text-center">
+                    No Currency found.
+                  </td>
+                </tr>
+              ) : (
+                filteredCurrency.map((cur) => (
+                  <tr key={cur.id}>
+                    <td><button
+                        className="btn btn-sm btn-primary me-2"
+                        onClick={() => setCurrencyObject(cur)}
+                      >
+                        <i className="bi bi-pencil"></i>
+                      </button></td>
+                    <td>{cur.currencycode}</td>
+                    <td>{cur.currencyname}</td>
+                    <td>{cur.symbol}</td>
+                    <td>{cur.active ? "Yes" : "No"}</td>
+                    <td>{cur.createdby}</td>
+                    <td>{cur.createdon}</td>
+                    <td>{cur.modifiedby}</td>
+                    <td>{cur.modifiedon}</td>
+                    <td>
+                      
+                      <button
+                        className="btn btn-sm btn-danger"
+                        onClick={() => handleDelete(cur.id)}
+                      >
+                        <i className="bi bi-trash3"></i>
+                      </button>
+                    </td>
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
+        </div>
+
+        {/* Pagination / Footer */}
+        <div className="d-flex justify-content-between align-items-center my-3">
+          <div>Total Currencies: {total}</div>
+          <label>
+            Rows:
+            <select
+              value={limit}
+              onChange={(e) => {
+                setLimit(Number(e.target.value));
+                setPage(0);
+              }}
+              className="form-select form-select-sm d-inline-block ms-1"
+              style={{ width: "70px" }}
+            >
+              <option value={10}>10</option>
+              <option value={25}>25</option>
+              <option value={100}>100</option>
+              <option value={500}>500</option>
+            </select>
+          </label>
+          <div>
+            <button
+              className="btn btn-secondary me-2"
+              onClick={() => setPage((p) => Math.max(p - 1, 0))}
+              disabled={page === 0}
+            >
+              Previous
+            </button>
+            <span>Page {page + 1}</span>
+            <button
+              className="btn btn-secondary ms-2"
+              onClick={() =>
+                setPage((p) => (total > (p + 1) * limit ? p + 1 : p))
+              }
+              disabled={(page + 1) * limit >= total}
+            >
+              Next
+            </button>
+          </div>
+        </div>
+      </>
+    ) : (
+      <CurrencyForm
+        currencyObject={currencyObject}
+        setCurrencyObject={setCurrencyObject}
+        onClose={() => {
+          setShowForm(false);
+          setCurrencyObject(null);
+          fetchCurrencies(page * limit, limit);
+        }}
+        fetchCurrencies={fetchCurrencies}
+        navigateToList={() => {
+          setShowForm(false);
+          setCurrencyObject(null);
+          fetchCurrencies(page * limit, limit);
+        }}
+        handleDelete={handleDelete}
+        handleNew={handleNew}
+        onSaved={handleUomSaved}
+      />
+    )}
+  </div>
+);
 }
 export default Currency;

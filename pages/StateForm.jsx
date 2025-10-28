@@ -4,11 +4,15 @@ import DataContext from "../context/DataContext";
 import { API_URL } from "../components/Config";
 import Select from "react-select";
 import { useMemo } from "react";  
+import {AuthContext} from "../context/AuthContext";
 
 // State Form
 
   function StateForm({ onClose, onSaved, stateValueEdit, navigateToList, handleDelete }) {
-  const { countries } = useContext(DataContext);
+  const { logout,username:ctxUsername,companyname,companyno,authFetch,acesstoken,referhtoken } = useContext(AuthContext);  
+  const { countries,fetchCountries } = useContext(DataContext);
+  const fallbackParams = JSON.parse(localStorage.getItem("globalParams") || "{}");
+  const uname = ctxUsername || fallbackParams.username || "admin";
   const [formData, setFormData] = useState({
     stateCode: "",
     stateName: "",
@@ -16,13 +20,19 @@ import { useMemo } from "react";
     countryName: "",
     countryCode: "",
     active: true,
-    createdby: "admin",
-    modifiedby: "admin",
+    createdby: uname,
+    modifiedby:uname,
   });
   const [showModal, setShowModal] = useState(false);
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState("");
  
+   
+   useEffect(() => {
+      {
+       fetchCountries();
+      }
+    }, [ ]);
 
   // ✅ Memoize dropdown options
   const countryOptions = useMemo(
@@ -51,8 +61,8 @@ import { useMemo } from "react";
         countryName: selectedCountry?.label || "",
         countryCode: selectedCountry?.code || "",
         active: !!stateValueEdit.active,
-        createdby: stateValueEdit.createdby || "admin",
-        modifiedby: stateValueEdit.modifiedby || "admin",
+        createdby: stateValueEdit.createdby || uname,
+        modifiedby: stateValueEdit.modifiedby ||uname,
       });
     }
   }, [stateValueEdit, countryOptions]);
@@ -102,9 +112,10 @@ import { useMemo } from "react";
         ? `${API_URL}/stateupdate/${stateValueEdit.id}`
         : `${API_URL}/state/`;
 
-      const res = await fetch(url, {
+      const res = await authFetch(url, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
+
         body: JSON.stringify({
           statecode: formData.stateCode,
           statename: formData.stateName,
@@ -127,7 +138,7 @@ import { useMemo } from "react";
       const handleStateSave = await res.json();
       
       const stateDataForCity = {
-      id: savedStateData.id || stateValueEdit?.id,
+      id: stateValueEdit?.id,
       statename: formData.stateName,
       statecode: formData.stateCode,
       countryid: formData.countryId,

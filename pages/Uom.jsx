@@ -12,6 +12,7 @@ function Uom() {
     const [page,setPage]= useState(0);
     const [uomObject,setUomObject]=useState();
     const [limit,setLimit] = useState(10);
+    const [collapsed,setCollapsed]= useState("");
 
  const filteredUoms = uoms.filter(c =>
   [
@@ -31,8 +32,8 @@ function Uom() {
   .includes(search.toLowerCase())
 );
 useEffect(() => {
-  fetchUoms(page * limit, limit);
-}, [page,limit]);
+  fetchUoms(page * limit, limit,total);
+}, [page,limit,total]);
 
 //New UOM 
 const handleNew = () => {
@@ -66,43 +67,47 @@ const handleDelete = async(id) => {
  }
 };
     return (    
-        <div className="container-fluid">
-        <div className="d-flex justify-content-between align-items-center my-3">
-          <h2>Unit of Measurement (UOM)</h2>
-           
-        </div>  
+    <div className="container-fluid px-0 py-0"> 
         {!showForm ? (
-        <>
-        <div className="row mb-3 align-items-center">
-            {/* Search box */}
-            <div className="col-md-8">
-                <div className="input-group">
-                <span className="input-group-text bg-primary text-white">
-                    <FaSearch />
-                </span>
-                <input
-                    type="text"
-                    className="form-control"
-                    placeholder="Search Tax..."
-                    value={search}
-                    onChange={(e) => setSearch(e.target.value)}
-                />
-                </div>
-            </div>
+        <> 
+        <div className="d-flex justify-content-between align-items-center mt-0 mb-2">
+        {/* Left Title Section */}
+        <div className="d-flex align-items-baseline">
+            <h3 className="fw-bold mb-0 me-2">UOM</h3>
+            <h5 className="text-muted mb-0">(Unit of Measurements)</h5>
+        </div>
 
-            {/* Button */}
-            <div className="col-md-4 text-end">
-                <button className="btn btn-primary" onClick={handleNew}>
-                <FaPlus className="me-2" />
-                New UOM
-                </button>
+        {/* Search box */}
+        <div className="col-md-4">
+            <div className="input-group">
+            <span className="input-group-text bg-primary text-white">
+                <FaSearch />
+            </span>
+            <input
+                type="text"
+                className="form-control"
+                placeholder="Search UOM..."
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+            />
             </div>
-            </div>
+        </div>
+
+        {/* Button */}
+        <div className="col-md-2 text-end">
+            <button className="btn btn-primary" onClick={handleNew}>
+            <FaPlus className="me-2" />
+            New UOM
+            </button>
+        </div>
+        </div>
+
 <div style={{ maxHeight: "500px", overflowY: "auto" }}>   
 <table className="table table-bordered table-hover">        
 <thead className="table-light">
 <tr>
-<th>Company Name</th>
+<th></th>
+<th hidden>Company Name</th>
 <th>UOM Code</th>
 <th>UOM Name</th>   
 <th>Active</th>
@@ -110,7 +115,7 @@ const handleDelete = async(id) => {
 <th>Created On</th> 
 <th>Modified By</th>
 <th>Modified On</th>
-<th>Actions</th>
+<th> </th>
 </tr>   
 </thead>
 <tbody>
@@ -129,7 +134,13 @@ const handleDelete = async(id) => {
 ) : (    
 filteredUoms.map((uom) => ( 
     <tr key={uom.id}>   
-        <td>{uom.companyname}</td>
+        <td><button 
+                className="btn btn-sm btn-primary me-2" 
+                onClick={() => setUomObject(uom)}
+            >
+                <i className="bi bi-pencil"></i> 
+            </button></td>
+        <td hidden>{uom.companyname}</td>
         <td>{uom.uomcode}</td>
         <td>{uom.uomname}</td>  
         <td>{uom.active ? "Yes" : "No"}</td>
@@ -137,13 +148,7 @@ filteredUoms.map((uom) => (
         <td>{uom.createdon}</td> 
         <td>{uom.modifiedby}</td>
         <td>{uom.modifiedon}</td>
-        <td>
-            <button 
-                className="btn btn-sm btn-primary me-2" 
-                onClick={() => setUomObject(uom)}
-            >
-                <i className="bi bi-pencil"></i> 
-            </button>
+        <td> 
             <button 
                 className="btn btn-sm btn-danger"
                 onClick={() => handleDelete(uom.id)}
@@ -157,43 +162,72 @@ filteredUoms.map((uom) => (
 </tbody>
 </table>
 </div>
-<div className="d-flex justify-content-between align-items-center my-3"
->    
-    <div>Total UOMs: {total}</div>
-   <label>
-    Rows:
-      <select
-        value={limit}
-        onChange={(e) => {
-          setLimit(Number(e.target.value));
+ {/* Pagination / Footer */}
+        <div   className="bg-light border-top d-flex justify-content-between align-items-center px-4 py-2 shadow-sm flex-wrap"
+              style={{ 
+                position:"fixed",
+                bottom: 0,
+                left: collapsed ? "70px" : "220px", // dynamic based on sidebar
+                width: `calc(100% - ${collapsed ? 70 : 220}px)`, // adjust with sidebar
+                zIndex: 1030,
+                height: "50px",
+                transition: "all 0.3s ease",
+                backgroundColor: "#f8f9fa",
+              }}
+            >
+  {/* ✅ Left section - Total count */}
+  <div className="fw-semibold text-secondary">
+    Total UOM's: {total}
+  </div>
+
+  {/* ✅ Middle section - Rows per page */}
+  <div className="d-flex align-items-center">
+    <label className="mb-0 me-2 text-secondary fw-semibold">Rows:</label>
+    <select
+      value={limit === total ? "all" : limit}
+      onChange={(e) => {
+        const selectedValue = e.target.value;
+        if (selectedValue === "all") {
+          setLimit(total); // show all
           setPage(0);
-        }}
-        className="form-select form-select-sm d-inline-block ms-1"
-        style={{ width: "70px" }}
+        } else {
+          setLimit(Number(selectedValue));
+          setPage(0);
+        }
+      }}
+      className="form-select form-select-sm"
+      style={{ width: "90px" }}
+    >
+      <option value={10}>10</option>
+      <option value={25}>25</option>
+      <option value={100}>100</option>
+      <option value={500}>500</option>
+      <option value="all">All</option>
+    </select>
+  </div>
+
+  {/* ✅ Right section - Pagination buttons */}
+  {limit !== total && (
+    <div className="d-flex align-items-center mt-2 mt-sm-0">
+      <button
+        className="btn btn-outline-secondary btn-sm me-2"
+        onClick={() => setPage((p) => Math.max(p - 1, 0))}
+        disabled={page === 0}
       >
-        <option value={10}>10</option>
-        <option value={25}>25</option>
-        <option value={100}>100</option>
-        <option value={500}>500</option>
-      </select>
-    </label>
-    <div>
-        <button 
-            className="btn btn-secondary me-2"
-            onClick={() => setPage((p) => Math.max(p - 1, 0))}
-            disabled={page === 0}
-        >
-            Previous
-        </button>
-        <span>Page {page + 1}</span>
-        <button
-            className="btn btn-secondary ms-2"
-            onClick={() => setPage((p) => (total > (p + 1) * limit ? p + 1 : p))}
-            disabled={(page + 1) * limit >= total}
-        >
-            Next
-        </button>
+        Previous
+      </button>
+      <span className="fw-semibold text-secondary">Page {page + 1}</span>
+      <button
+        className="btn btn-outline-secondary btn-sm ms-2"
+        onClick={() =>
+          setPage((p) => ((p + 1) * limit < total ? p + 1 : p))
+        }
+        disabled={(page + 1) * limit >= total}
+      >
+        Next
+      </button>
     </div>
+  )}
 </div>
 </>     
         ) : (

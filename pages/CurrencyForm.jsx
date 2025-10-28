@@ -6,14 +6,13 @@ import SearchModal from "../components/SearchModal";
 
 function CurrencyForm({ onClose,onSaved, currencyObject,setCurrencyObject,navigateToList,handleDelete }) {
   const { fetchCurrencies, currencies } = useContext(DataContext);
-  const [selectedUom, setSelectedUom] = useState(currencyObject || null);
   const [formData, setFormData] = useState({
     id: null,     
     currencycode: "",
     currencyname: "",
     active: true,
-    createdby: "admin",
-    modifiedby: "admin"
+    createdby: " ",
+    modifiedby: " "
   });
   const [showModal, setShowModal] = useState(false);
   const [isEdit, setIsEdit] = useState(false);
@@ -28,8 +27,8 @@ function CurrencyForm({ onClose,onSaved, currencyObject,setCurrencyObject,naviga
       currencycode: "",
       currencyname: "",
       active: true,
-      createdby: "admin",
-      modifiedby: "admin",
+      createdby: " ",
+      modifiedby: " ",
     }));
     setIsEdit(false);
     setMessage("");
@@ -71,6 +70,7 @@ function CurrencyForm({ onClose,onSaved, currencyObject,setCurrencyObject,naviga
       const payload = { 
         currencycode: formData.currencycode,
         currencyname: formData.currencyname,
+        symbol: formData.symbol,
         active: formData.active,
         createdby: formData.createdby || "admin",
         modifiedby: formData.modifiedby || "admin"
@@ -102,7 +102,7 @@ function CurrencyForm({ onClose,onSaved, currencyObject,setCurrencyObject,naviga
       onSaved();
       onClose();
     } catch (err) {
-      console.error("Error While Saving UOM:", err);
+      console.error("Error While Saving Currency:", err);
 
       if (Array.isArray(err)) {
         // Backend returned multiple errors
@@ -111,7 +111,7 @@ function CurrencyForm({ onClose,onSaved, currencyObject,setCurrencyObject,naviga
       } else if (err?.message) {
         setMessage(err.message);
       } else {
-        setMessage("Failed to save UOM.");
+        setMessage("Failed to save Currency.");
       }
 
     } finally {
@@ -127,7 +127,7 @@ function CurrencyForm({ onClose,onSaved, currencyObject,setCurrencyObject,naviga
     }
     else
     {
-        alert("No uom Selected")
+        alert("No Currency Selected")
     }
  }
   
@@ -143,8 +143,7 @@ function CurrencyForm({ onClose,onSaved, currencyObject,setCurrencyObject,naviga
     { value: "currencyname", label: "Currency Name" },
     { value: "active", label: "Active" }, 
   ];
-
-
+ 
   return (
     <div className="card w-100">
       <div className="d-flex justify-content-between align-items-center w-100"
@@ -180,9 +179,14 @@ function CurrencyForm({ onClose,onSaved, currencyObject,setCurrencyObject,naviga
           </div>
 
           <div className="mb-3">
-            <label className="form-label">UOM Name *</label>
+            <label className="form-label">Currency Name *</label>
             <input type="text" className="form-control" name="currencyname"
                    value={formData.currencyname} onChange={handleChange} style={{ width: "400px" }} />
+          </div>
+          <div className="mb-3">
+            <label className="form-label">Currency Symbol *</label>
+            <input type="text" className="form-control" name="symbol"
+                   value={formData.symbol} onChange={handleChange} style={{ width: "100px" }} />
           </div>
 
           <div className="form-check mb-3">
@@ -190,6 +194,7 @@ function CurrencyForm({ onClose,onSaved, currencyObject,setCurrencyObject,naviga
                    checked={formData.active} onChange={handleChange} />
             <label className="form-check-label">Active</label>
           </div>
+          
 
           <div>
             <button type="submit" className="btn btn-primary me-2" disabled={loading}>

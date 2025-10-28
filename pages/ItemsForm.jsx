@@ -35,27 +35,21 @@ function ItemsForm({ onClose,onSaved, itemsObject,setItemsObject,navigateToList,
   const [isEdit, setIsEdit] = useState(false);
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState("");  
-  const{uoms,fetchUoms,taxmaster,fetchTaxMaster} = useData();
+  const{uoms,fetchUoms,taxmaster,fetchTaxMaster,hsn,fetchHsn} = useData();
   const [selectedTax, setSelectedTax] = useState('');
   const [selectedUom, setSelectedUom] = useState('');
- 
-  useEffect(() => {
-      fetchUoms();
-      fetchTaxMaster();
-    }, [fetchUoms,fetchTaxMaster]); 
 
-  console.log("UOM Form Data",uoms);
-  console.log("SelectedUom",selectedUom);
+  const fallbackParams = JSON.parse(localStorage.getItem("globalParams") || "{}");
+  const uname = ctxUsername || fallbackParams.username || "admin";
+  const cid = defaultcompanyid || fallbackParams.companyid || null;
+  const cno = defaultCompanyno || fallbackParams.companyno || "";  
  
- const uomOptions = useMemo(() => {
+  const uomOptions = useMemo(() => {
     return uoms.map((uom) => ({
       value: uom.id,           // or uom.unit_code if that's what you need
       label: uom.uomcode     // This is what displays in the dropdown
     }));
-  }, [uoms]);
-
-  console.log("uomOptions:", uomOptions);
- console.log("formData.selling_uom:", formData.selling_uom); 
+  }, [uoms]); 
  
    const taxOptions = useMemo(() => {
     return taxmaster.map((tm) => ({
@@ -65,11 +59,15 @@ function ItemsForm({ onClose,onSaved, itemsObject,setItemsObject,navigateToList,
     }));
   }, [taxmaster]);
 
-  const fallbackParams = JSON.parse(localStorage.getItem("globalParams") || "{}");
-  const uname = ctxUsername || fallbackParams.username || "admin";
-  const cid = defaultcompanyid || fallbackParams.companyid || null;
-  const cno = defaultCompanyno || fallbackParams.companyno || ""; 
-  console.log(fallbackParams.username);
+  const hsnOptions= useMemo(()=> { return  hsn.map((h)=> ({value:h.id,label:h.hsncode}))});
+
+  useEffect(() => {
+      fetchUoms();
+      fetchTaxMaster(); 
+      fetchHsn();
+    }, [fetchUoms,fetchTaxMaster,fetchHsn]); 
+ 
+  
 
   const resetForm = () => {
   let defaultCompanyName = "Default Company";
@@ -117,13 +115,15 @@ useEffect(() => {
       ...itemsObject,
       selling_uom:  itemsObject.selling_uom  || null,
       purchase_uom:  itemsObject.purchase_uom  || null,
-      taxname:  itemsObject.taxname  || null,
+      taxname: itemsObject.taxmasterid ??  null, 
+      hsncode: itemsObject.hsncode ??"",
     });
+    console.log("taxname",itemsObject.taxmasterid);
     setIsEdit(true);
   } else if (itemsObject === null || itemsObject === undefined) {
     resetForm();
   }
-}, [itemsObject, uomOptions, taxOptions]);
+}, [itemsObject, uomOptions, taxOptions ]);
 
 
   const handleChange = (e) => {
@@ -163,8 +163,8 @@ useEffect(() => {
         selling_price:formData.selling_price,
         cost_price:formData.cost_price,
         active: formData.active,
-        createdby: formData.createdby || uname,
-        modifiedby: formData.modifiedby || uname
+        createdby:  uname,
+        modifiedby: uname
       };
 
       const method = "POST"
@@ -265,7 +265,7 @@ useEffect(() => {
       <div className="card p-3 border border-secondary w-100" style={{ backgroundColor: "#ebe6e6ff" }}>
         {message && <div className="alert alert-danger">{message}</div>}
         <form onSubmit={handleSubmit}>
-          <div className="row mb-3">
+          {/* <div className="row mb-3">
          <div className="col-md-4">
           <label className="form-label">Company Name</label>
           <input type="text" className="form-control" name="companyname"
@@ -278,7 +278,7 @@ useEffect(() => {
           readOnly
                  value={formData.companyno} onChange={handleChange} style={{ width: "200px" }}  />
         </div>
-        </div>
+        </div> */}
         <div className="row mb-3">
           <div className="col-md-4">
             <label className="form-label">Item Code *</label>
@@ -342,8 +342,9 @@ useEffect(() => {
           </div> 
           <div className="col-md-3">
             <label className="form-label">Hsn Code</label>
-            <input type="text" className="form-control" name="hsncode"
-                   value={formData.hsncode} onChange={handleChange} style={{ width: "200px" }} />
+            <Select options={hsnOptions}   
+                   value={hsnOptions.find(opt=> opt.label === formData?.hsncode)|| ""} 
+                   onChange={(selectedHsn) => setFormData({...formData,hsncode:selectedHsn?.label})}   />
           </div> 
             
          </div>
@@ -395,7 +396,9 @@ useEffect(() => {
       columns={columns}
       searchFields={searchFields}
         onSelect={(i) => {
-        setFormData({ ...i }); // update form
+        const formated= { ...i,   taxmasterid: i.taxmasterid }
+        console.log("taxname",formated.taxmasterid);
+        setFormData(formated); // update form
         setItemsObject(i);      
         setIsEdit(true);
         setShowModal(false);

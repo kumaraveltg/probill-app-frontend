@@ -10,8 +10,10 @@ import DataContext from "../context/DataContext";
 
 
 function CompanyForm({ onClose,onSaved, companyObject,navigateToList }) {
-  const {  currencies} = useContext(DataContext); 
-  const {accessToken,fetchAuth} = useContext(AuthContext)
+  const {  currencies,fetchCurrencies} = useContext(DataContext); 
+  const {username:ctxUsername,authFetch} = useContext(AuthContext)
+  const fallbackParams = JSON.parse(localStorage.getItem("globalParams") || "{}");
+  const uname = ctxUsername || fallbackParams.username || "admin";
   const [formData, setFormData] = useState({
     id: null,
     companycode: "", 
@@ -25,12 +27,16 @@ function CompanyForm({ onClose,onSaved, companyObject,navigateToList }) {
     currencycode: "",
     active: true,
     createdby: "admin",
-    modifiedby: "admin"
+    modifiedby: uname
   });
   const [showModal, setShowModal] = useState(false);
   const [isEdit, setIsEdit] = useState(false);
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState(""); 
+
+  useEffect(() => {
+    fetchCurrencies();
+  },[ ])
 
     const currecnySelection = useMemo(() =>{
         if(!currencies || !Array.isArray(currencies))             
@@ -67,7 +73,7 @@ function CompanyForm({ onClose,onSaved, companyObject,navigateToList }) {
     currencycode: selectedCurrency?.label || "",
     active: companyObject?.active ?? true,
     createdby: companyObject?.createdby || "admin",
-    modifiedby: "admin",
+    modifiedby: uname,
   });
 
   setIsEdit(!!companyObject);
@@ -148,7 +154,7 @@ function CompanyForm({ onClose,onSaved, companyObject,navigateToList }) {
 
       console.log("Sending payload:", payload);
 
-      const res = await fetch(endpoint, {
+      const res = await authFetch(endpoint, {
         method,
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload)
@@ -187,17 +193,7 @@ function CompanyForm({ onClose,onSaved, companyObject,navigateToList }) {
     }
   };
 
-//  const handleDeleteClick= ()=>{
-//     if(companyObject?.id){
-//         handleDelete(companyObject.id);
-//         resetForm();
-//         companyObject(null);     
-//     }
-//     else
-//     {
-//         alert("No Company Selected")
-//     }
-//  }
+ 
 
 
  const columns = [
@@ -240,46 +236,77 @@ function CompanyForm({ onClose,onSaved, companyObject,navigateToList }) {
       <div className="card p-3 border border-secondary w-100" style={{ backgroundColor: "#ebe6e6ff" }}>
         {message && <div className="alert alert-danger">{message}</div>}
         <form onSubmit={handleSubmit}>
-          <div className="mb-3">
+          <div className="row mb-3">
+          <div className="col-md-5">
             <label className="form-label">Company Name*</label>
             <input type="text" className="form-control" name="companyname"
                    value={formData.companyname || ""} onChange={handleChange} style={{ width: "400px" }} />
           </div>
 
-          <div className="mb-3">
+          <div className="col-md-2">
             <label className="form-label">Company Code *</label>
             <input type="text" className="form-control" name="companycode"
-                   value={formData.companycode} onChange={handleChange} style={{ width: "200px" }} />
+                   value={formData.companycode} onChange={handleChange} style={{ width: "250px" }} />
+          </div> 
           </div>
+          <div className="row mb-3 align-items-start">
+            {/* Address field (4 rows textarea) */}
+            <div className="col-md-5 position-relative">
+              <label className="form-label">Address*</label>
+              <textarea
+                className="form-control"
+                name="adress"
+                value={formData.adress}
+                onChange={handleChange}
+                rows={4}
+                style={{ width: "400px", resize: "none" }}
+              />
+            </div>
 
-          <div className="mb-3">
-            <label className="form-label">Address*</label>
-            <textarea className="form-control" name="adress"
-                   value={formData.adress} onChange={handleChange} rows={4} style={{ width: "400px" }} />
-          </div>
-          <div className="mb-3">
-            <label className="form-label">GST No*</label>
-            <input type="text" className="form-control" name="gstno"
-                   value={formData.gstno} onChange={handleChange} style={{ width: "250px" }} />
-          </div>
-          <div className="mb-3">
-            <label className="form-label">Phone </label>
-            <input type="text" className="form-control" name="phone"
-                   value={formData.phone} onChange={handleChange} style={{ width: "250px" }} />
-          </div>
-          <div className="mb-3">
+            {/* Right side container for GST and Phone */}
+            <div className="col-md-3 d-flex flex-column justify-content-between" style={{ height: "100px" }}>
+              {/* GST on top line */}
+              <div>
+                <label className="form-label">GST No*</label>
+                <input
+                  type="text"
+                  className="form-control"
+                  name="gstno"
+                  value={formData.gstno}
+                  onChange={handleChange}
+                  style={{ width: "250px" }}
+                />
+              </div>
+
+              {/* Phone aligned to bottom of textarea */}
+              <div>
+                <label className="form-label">Phone</label>
+                <input
+                  type="text"
+                  className="form-control"
+                  name="phone"
+                  value={formData.phone}
+                  onChange={handleChange}
+                  style={{ width: "250px" }}
+                />
+              </div>
+            </div>
+            </div>
+            <div className="row mb-3">
+          <div className="col-md-4">
             <label className="form-label">Email-id </label>
             <input type="text" className="form-control" name="emailid"
-                   value={formData.emailid} onChange={handleChange} style={{ width: "400px" }} />
+             value={formData.emailid} onChange={handleChange}   />
           </div>
-          <div className="mb-3">
+         
+          <div className="col-md-4 offset-md-1" >
             <label className="form-label">Contact Person</label>
             <input type="text" className="form-control" name="contactperson"
-                   value={formData.contactperson} onChange={handleChange} style={{ width: "400px" }} />
+                   value={formData.contactperson} onChange={handleChange}  />
           </div>
-          <div className="mb-3">
+          <div className="col-md-2">
             <label className="required" htmlFor="countryId">Currency </label>
-            <div style={{ width: "200px" }}>
+            <div  >
               <Select
                 options={currecnySelection}
                 value={currecnySelection.find(opt => opt.value === formData.currency) || null}
@@ -290,7 +317,7 @@ function CompanyForm({ onClose,onSaved, companyObject,navigateToList }) {
                     currencycode: selectedCurrency?.label || ""
                   }))
                 }
-                placeholder="--Select Currency--" 
+                placeholder="Select Currency" 
                 isClearable
                 isSearchable
                 filterOption={(option, inputValue) =>
@@ -298,7 +325,8 @@ function CompanyForm({ onClose,onSaved, companyObject,navigateToList }) {
                 }
               />
             </div>
-          </div>   
+          </div>
+          </div>
           <div className="form-check mb-3">
             <input type="checkbox" className="form-check-input" name="active"
                    checked={formData.active} onChange={handleChange} />

@@ -7,8 +7,8 @@ import { API_URL } from "../components/Config";
 import SearchModal from "../components/SearchModal";
 import DataContext, { useData } from "../context/DataContext";
 import { PDFDownloadLink, PDFViewer } from "@react-pdf/renderer"
-import InvoicePDF from "./InvoicePDF";
-import { ar } from "date-fns/locale";
+import { pdf } from "@react-pdf/renderer";
+import InvoicePDF from "./InvoicePDF"; 
 
 
 function InvoiceForm({ onClose, onSaved, invoiceObject, setInvoiceObject, navigateToList, handleDelete,invoiceno }) {
@@ -1306,10 +1306,9 @@ const handleOpenPdf = () => {
       type="button"
       className="btn btn-primary"
       disabled={!pdfData}
-      onClick={() => setShowPdfModal(true)}
-    >
-      Preview PDF
-    </button>
+      //onClick={() => setShowPdfModal(true)}
+      onClick={handleOpenPdf}
+    >   Preview PDF </button>
 
     {/* Download PDF Button */}
     <PDFDownloadLink
@@ -1321,7 +1320,7 @@ const handleOpenPdf = () => {
     </PDFDownloadLink>
         </>
       ) : (
-        <p className="text-muted mt-4">PDF preview will appear after saving the invoice.</p>
+        <p className="text-muted mt-1">PDF preview will appear after saving the invoice.</p>
       )}
         </div>
       </form>

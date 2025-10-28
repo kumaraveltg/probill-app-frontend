@@ -11,14 +11,15 @@ function Layout() {
     <div>
       <Topbar />
       <Sidebar collapsed={collapsed} setCollapsed={setCollapsed} />
-      <div
+         <div
         className="main-content"
         style={{
           marginLeft: collapsed ? "70px" : "220px", // adjust based on sidebar
           marginTop: "60px", // topbar height
           transition: "margin-left 0.3s",
+          padding: "5px",
         }}
-      >
+      >  
         <Outlet />
       </div>
     </div>

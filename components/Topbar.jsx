@@ -1,18 +1,19 @@
 import React from 'react'
 import "../src/App.css";
-import { useContext } from 'react';
-import { AuthContext } from '../context/AuthContext';
+import { useContext  } from 'react';
+import { AuthContext } from '../context/AuthContext';   
 
 
 function Topbar() {
-    const { logout } = useContext(AuthContext);
+    const { logout,username,companyname,companyno } = useContext(AuthContext);  
+
   return (
       <div className="bg-custom  p-2 d-flex align-items-center justify-content-between topbar-fixed" >
           <div className='d-flex align-item-centre'>
           <img src="/billinglogo.jpg"         
           alt="Logo" 
           style={{ width: '60px', height: '50px', marginRight: '10px', border: "2px solid black"  }} />  
-          <h3 className="m-0 text-white bold" >Bill Studio</h3>  
+          <h3 className="m-0 text-white bold" >{companyname}({companyno})</h3>  
           </div>      
           
           
@@ -30,7 +31,7 @@ function Topbar() {
   
         {/* Right: Profile Icon */}
         <div className="d-flex align-items-center">
-          <span className="me-2 text-white">Hello, User</span>
+          <span className="me-2 text-white">   {username ? username : "User"}</span>
           <div className='dropdown'>
           <a href='#'
             className="d-flex align-items-center text-light text-decoration-none dropdown-toggle"

@@ -10,8 +10,8 @@ function FinyrForm({ onClose, onSaved, finyrObject, setFinyrObject, navigateToLi
   const [formData, setFormData] = useState({
     id: null,
     finyrname: "",
-    startdate: "",
-    enddate: "",
+    hstartdate: "",
+    henddate: "",
     active: true,
     createdby: "",
     modifiedby: ""
@@ -27,13 +27,21 @@ function FinyrForm({ onClose, onSaved, finyrObject, setFinyrObject, navigateToLi
   const fallbackParams = JSON.parse(localStorage.getItem("globalParams") || "{}");
  const uname = ctxUsername || fallbackParams.username || "system";
 
+  const formatDateForInput = (dateStr) => {
+      if (!dateStr) return "";
+      const parts = dateStr.split("/");
+      if (parts.length !== 3) return "";
+      const [day, month, year] = parts.map((p) => p.trim());
+      if (!day || !month || !year) return "";
+      return `${year}-${month.padStart(2, "0")}-${day.padStart(2, "0")}`;
+    };
   // Reset form for new entry
   const resetForm = () => {
     setFormData({
       id: null,
       finyrname: "",
-      startdate: "",
-      enddate: "",
+      hstartdate: "",
+      henddate: "",
       active: true,
       createdby: uname ||"",
       modifiedby: uname||""
@@ -43,15 +51,25 @@ function FinyrForm({ onClose, onSaved, finyrObject, setFinyrObject, navigateToLi
     setMessage("");
   };
 
+   
+
   // Populate form for edit or new
   useEffect(() => {
-    if (finyrObject && finyrObject.id) {
-      setFormData({ ...finyrObject });
-      setIsEdit(true);
-    } else {
-      resetForm();
-    }
-  }, [finyrObject]);
+  if (finyrObject && finyrObject.id) { 
+    const formatted = {
+      ...finyrObject,
+      hstartdate: formatDateForInput(finyrObject.hstartdate),
+      henddate: formatDateForInput(finyrObject.henddate),
+    };
+
+    setFormData(formatted);
+    setIsEdit(true);
+  } else {
+    resetForm();
+  }
+}, [finyrObject,SearchModal]);
+
+
 
   //grid check box - all 
   const handleSelectAll = (checked) => {
@@ -175,11 +193,11 @@ function FinyrForm({ onClose, onSaved, finyrObject, setFinyrObject, navigateToLi
     try {
       const payload = {
       finyrname: formData.finyrname,
-      startdate: formData.startdate,
-      enddate: formData.enddate,
+      hstartdate: formData.hstartdate,
+      henddate: formData.henddate,
       active: formData.active,
-      createdby: formData.createdby || uname,
-      modifiedby: formData.modifiedby || uname,
+      createdby:   uname,
+      modifiedby:  uname,
     };
 
       const endpoint = isEdit ? `${API_URL}/updatefinyr/${formData.id}` : `${API_URL}/addfinyr/`;
@@ -217,6 +235,8 @@ function FinyrForm({ onClose, onSaved, finyrObject, setFinyrObject, navigateToLi
     }
   };
 
+  
+
   return (
     <div className="card w-100">
       <div className="d-flex justify-content-between align-items-center w-100"
@@ -252,14 +272,14 @@ function FinyrForm({ onClose, onSaved, finyrObject, setFinyrObject, navigateToLi
 
         <div className="col-md-3">
           <label className="form-label">Start Date</label>
-          <input type="date" className="form-control" name="startdate"
-                 value={formData.startdate} onChange={handleChange} style={{ width: "200px" }} />
+          <input type="date" className="form-control" name="hstartdate"
+                 value={formData.hstartdate||""} onChange={(e)=> setFormData({...formData,hstartdate:e.target.value})} style={{ width: "200px" }} />
         </div>
 
         <div className="col-md-3">
           <label className="form-label">End Date</label>
-          <input type="date" className="form-control" name="enddate"
-                 value={formData.enddate} onChange={handleChange} style={{ width: "200px" }} />
+          <input type="date" className="form-control" name="henddate"
+                 value={formData.henddate||""} onChange={(e)=> setFormData({...formData,henddate:e.target.value})} style={{ width: "200px" }} />
         </div>
         </div>
 
@@ -293,7 +313,7 @@ function FinyrForm({ onClose, onSaved, finyrObject, setFinyrObject, navigateToLi
       <button
         type="button"
         className="btn btn-primary"
-        onClick={() => generatePeriods(formData.startdate, formData.enddate)}
+        onClick={() => generatePeriods(formData.hstartdate, formData.henddate)}
       >
         Generate Periods
       </button>
@@ -371,20 +391,25 @@ function FinyrForm({ onClose, onSaved, finyrObject, setFinyrObject, navigateToLi
         show={showModal}
         onClose={() => setShowModal(false)}
         apiUrl={`${API_URL}/finyr/search`}
-        columns={[
-          { field: "finyrname", label: "Financial Year" },
-          { field: "startdate", label: "Start Date" }
+          columns={[
+          { field: "finyrname", label: "Financial Year" }, 
         ]}
         searchFields={[
-          { value: "finyrname", label: "Financial Year" },
-          { value: "startdate", label: "Start Date" }
+          { value: "finyrname", label: "Financial Year" }, 
         ]}
-        onSelect={(fin) => {
-          setFormData({ ...fin });
-          setFinyrObject(fin);
-          setIsEdit(true);
-          setShowModal(false);
-        }}
+      onSelect={(fin) => {
+  const formatted = {
+    ...fin,
+    hstartdate: formatDateForInput(fin.hstartdate),
+    henddate: formatDateForInput(fin.henddate),
+  };
+  setFormData(formatted);
+  setFinyrObject(fin);
+  setIsEdit(true);
+  setShowModal(false);
+}}
+
+
       />
     </div>
   );

@@ -3,26 +3,56 @@ import { FaSave, FaTimes } from "react-icons/fa";
 import DataContext from "../context/DataContext";
 import { API_URL } from "../components/Config";
 import SearchModal from "../components/SearchModal";
+import { AuthContext } from "../context/AuthContext";
 
 function UomForm({ onClose,OnSaved, uomObject,setUomObject,navigateToList,handleDelete }) {
-  const { fetchUoms, uoms,companyid, companyname } = useContext(DataContext);
-  const [selectedUom, setSelectedUom] = useState(uomObject || null);
-  const defaultcompanyid=1; // -- need to check the global parameters
+  const { fetchUoms, uoms,companies,fetchCompanies  } = useContext(DataContext);
+  const { companyid:defaultcompanyid,companyname,companyno :defaultCompanyno,username:ctxUsername,authFetch,acessToken} = useContext(AuthContext)
+  const [selectedUom, setSelectedUom] = useState(uomObject || null); 
+  const fallbackParams = JSON.parse(localStorage.getItem("globalParams") || "{}");
+  const uname = ctxUsername || fallbackParams.username || "admin";
+  const cid = defaultcompanyid || fallbackParams.companyid || companyid;
+  const cno = defaultCompanyno || fallbackParams.companyno || companyno;
   const [formData, setFormData] = useState({
     id: null,
-    companyid: companyid ?? defaultcompanyid,
+    companyid: defaultcompanyid ?? null,
     companyname: companyname ?? "",
     uomcode: "",
     uomname: "",
+    companyno: cno ?? "",
     active: true,
-    createdby: "admin",
-    modifiedby: "admin"
+    createdby: uname,
+    modifiedby: uname
   });
   const [showModal, setShowModal] = useState(false);
   const [isEdit, setIsEdit] = useState(false);
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState("");
+
+  console.log("username",uname);
  
+ useEffect(() => {
+    if (!companies.length) {
+      fetchCompanies();
+    }
+  }, [companies.length, fetchCompanies]);
+
+  useEffect(() => {
+  if (  Array.isArray(companies) && companies.length > 0) {
+    const defaultCompany = companies.find(c => c.companyid === defaultcompanyid);
+    if (defaultCompany) {
+      setFormData(prev => ({
+        ...prev,
+        companyname: defaultCompany.companyname,
+        companyno: defaultCompany.companyno,
+        companyid: defaultCompany.companyid
+      }));
+     
+      console.log("Default company set:", defaultCompany.companyname);
+    }
+  }
+}, [companies, defaultcompanyid ]);
+
 
   const resetForm = () => {
     let defaultCompanyName = "Default Company";
@@ -45,8 +75,9 @@ function UomForm({ onClose,OnSaved, uomObject,setUomObject,navigateToList,handle
       uomcode: "",
       uomname: "",
       active: true,
-      createdby: "admin",
-      modifiedby: "admin",
+      companyno: companyno ?? cno,
+      createdby: uname,
+      modifiedby:uname,
     }));
     setIsEdit(false);
     setMessage("");
@@ -91,8 +122,9 @@ function UomForm({ onClose,OnSaved, uomObject,setUomObject,navigateToList,handle
         uomcode: formData.uomcode,
         uomname: formData.uomname,
         active: formData.active,
-        createdby: formData.createdby || "admin",
-        modifiedby: formData.modifiedby || "admin"
+        companyno:formData.companyno,
+        createdby: uname || "admin",
+        modifiedby: uname || "admin"
       };
 
       const method = "POST"
@@ -100,9 +132,9 @@ function UomForm({ onClose,OnSaved, uomObject,setUomObject,navigateToList,handle
 
       console.log("Sending payload:", payload);
 
-      const res = await fetch(endpoint, {
-        method,
-        headers: { "Content-Type": "application/json" },
+      const res = await authFetch(endpoint, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", "Authorization": `Bearer ${acessToken}`},
         body: JSON.stringify(payload)
       });
 
@@ -191,11 +223,11 @@ function UomForm({ onClose,OnSaved, uomObject,setUomObject,navigateToList,handle
       <div className="card p-3 border border-secondary w-100" style={{ backgroundColor: "#ebe6e6ff" }}>
         {message && <div className="alert alert-danger">{message}</div>}
         <form onSubmit={handleSubmit}>
-          <div className="mb-3">
+          {/* <div className="mb-3">
             <label className="form-label">Company Name*</label>
             <input type="text" className="form-control" name="companyname"
                    value={formData.companyname || companyname || ""} readOnly style={{ width: "400px" }} />
-          </div>
+          </div> */}
 
           <div className="mb-3">
             <label className="form-label">UOM Code *</label>
