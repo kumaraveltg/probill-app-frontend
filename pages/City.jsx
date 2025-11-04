@@ -168,7 +168,7 @@
             >
   {/* ✅ Left section - Total count */}
   <div className="fw-semibold text-secondary">
-    Total Countries: {total}
+    Total Cities: {total}
   </div>
 
   {/* ✅ Middle section - Rows per page */}

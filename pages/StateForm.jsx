@@ -5,6 +5,7 @@ import { API_URL } from "../components/Config";
 import Select from "react-select";
 import { useMemo } from "react";  
 import {AuthContext} from "../context/AuthContext";
+import CountryForm from "../pages/CountryForm"
 
 // State Form
 
@@ -26,11 +27,13 @@ import {AuthContext} from "../context/AuthContext";
   const [showModal, setShowModal] = useState(false);
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState("");
+  const [ showCountryModal,setShowCountryModal]=useState(false);
  
    
    useEffect(() => {
       {
        fetchCountries();
+       console.log("countires",countries);
       }
     }, [ ]);
 
@@ -40,7 +43,8 @@ import {AuthContext} from "../context/AuthContext";
       countries.map(c => ({
         value: c.id,
         label: c.countryname,
-        code: c.countrycode,
+        code: c.countrycode, 
+        countryid:c.id
       })),
     [countries]
   );
@@ -100,7 +104,10 @@ import {AuthContext} from "../context/AuthContext";
       [name]: type === "checkbox" ? checked : value,
     }));
   };
-
+ 
+  const handleOpenModal = ()=>{
+    setShowCountryModal(true);
+  };
   // ✅ Save
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -249,7 +256,8 @@ import {AuthContext} from "../context/AuthContext";
           </div>
 
           <div className="mb-3">
-            <label className="required" htmlFor="countryId">Country Name</label>
+            <label>Country Name</label>
+            <div style={{display:"flex", alignItems:"center",gap:"8x"}}>
             <div style={{ width: "350px" }}>
               <Select
                 options={countryOptions}
@@ -262,7 +270,19 @@ import {AuthContext} from "../context/AuthContext";
                   option.label.toLowerCase().startsWith(inputValue.toLowerCase())
                 }
               />
-            </div>
+            </div> <button
+                onClick={ () => handleOpenModal(true)}
+                style={{
+                  padding: "4px 12px",
+                  fontSize: "16px",
+                  cursor: "pointer",
+                  height: "38px", // matches typical react-select height
+                }}
+              >
+                +
+              </button>
+
+          </div>
           </div>
 
           <div className="mb-3">
@@ -292,9 +312,35 @@ import {AuthContext} from "../context/AuthContext";
           </button>
           <button type="button" className="btn btn-secondary" onClick={onClose}>
             Cancel
-          </button>
+          </button> 
         </form>
       </div>
+        {/* ✅ Country Modal */}
+      {showCountryModal && (
+        <>
+          <div className="modal fade show d-block" tabIndex="-1" role="dialog">
+            <div className="modal-dialog modal-lg" role="document">
+              <div className="modal-content">
+                <div className="modal-header">
+                  <h5 className="modal-title">Add New Country</h5>
+                  <button type="button" className="btn-close" onClick={() => setShowCountryModal(false)}></button>
+                </div>
+                <div className="modal-body">
+                  <CountryForm
+                    onSaved={() => {
+                      fetchCountries();
+                      setShowCountryModal(false);
+                    }}
+                    onClose={() => setShowCountryModal(false)}
+                  />
+                </div>
+              </div>
+            </div>
+          </div>
+          <div className="modal-backdrop fade show" onClick={() => setShowCountryModal(false)}></div>
+        </>
+      )}
+          
 
       {/* Search Modal */}
       <SearchModal
@@ -319,7 +365,9 @@ import {AuthContext} from "../context/AuthContext";
           });
         }}
       />
+      
     </div>
   );
+ 
 }
 export default StateForm;

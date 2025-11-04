@@ -9,22 +9,20 @@ import DataContext, { useData } from "../context/DataContext";
 
 // Receipts form with tabbed layout
  function ReceiptsForm({
-  receipt,
-  onClose,
+   onClose,
   onSaved,
   handleDelete,
   handleNew,
   fetchReceipts,
   navigateToList,
-  receiptno, 
+  receiptno,  
+  receiptsObject,
+  setReceiptsObject,
 }) {
- 
- 
   
   const { companies,fetchCompany,customer, fetchCustomer,invoices,fetchInvoices,currencies,fetchCurrencies} = useData();
   const { invoice, companyname, companyno, companyid } = useContext(DataContext);
   const { acessToken, authFetch, username: ctxUsername, companyid: defaultcompanyid, companyno: defaultCompanyno } = useContext(AuthContext);
-  const [receiptsObject, setReceiptsObject] = useState(null);
   const [error, setError] = useState("");
   const [isEdit, setIsEdit] = useState(false);
   const [activeTab, setActiveTab] = useState("gridData");

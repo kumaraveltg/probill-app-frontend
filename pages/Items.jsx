@@ -194,7 +194,7 @@ filteredItems.map((i) => (
     >
   {/* ✅ Left section - Total count */}
   <div className="fw-semibold text-secondary">
-    Total Taxmaster: {total}
+    Total Items: {total}
   </div>
 
   {/* ✅ Middle section - Rows per page */}

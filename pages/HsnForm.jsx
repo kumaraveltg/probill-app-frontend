@@ -20,9 +20,9 @@ function HsnForm({ onClose,onSaved, hsnObject,setHsnObject,navigateToList,handle
     hsncode: "",
     hsndescription: "", 
     taxheaderid:null,
-    taxname:" ",
+    taxname:null,
     taxrate:0.00,
-    effective_date:"",
+    effective_date:new Date(),
     active: true,
     createdby: "",
     modifiedby: ""
@@ -41,8 +41,6 @@ function HsnForm({ onClose,onSaved, hsnObject,setHsnObject,navigateToList,handle
   const cid = loginCompanyId || fallbackParams.companyid || null;
   const cno = loginCompanyNo || fallbackParams.companyno || ""; 
   console.log(fallbackParams.username);
-
-  
  
 
     const taxOptions = useMemo(() => {
@@ -77,9 +75,9 @@ function HsnForm({ onClose,onSaved, hsnObject,setHsnObject,navigateToList,handle
     companyno:cno,
     hsncode: "",
     hsndescription: "",
-    effective_date:"",
-    taxheaderid:null,
-    taxname:"",
+    effective_date:new Date(),
+    taxheaderid:0,
+    taxname:null,
     taxrate:0.00,
     active: true,
     createdby: uname,
@@ -91,9 +89,16 @@ function HsnForm({ onClose,onSaved, hsnObject,setHsnObject,navigateToList,handle
 
   // Populate form for edit or new mode
   useEffect(() => {
-  if (hsnObject && hsnObject.id) {
-    // Edit mode
-    setFormData({ ...hsnObject , taxheaderid:  hsnObject.taxheaderid  || null,});
+  if (hsnObject && taxOptions.length > 0) {
+    // Find matching option based on id or name  This is backend defination problem my taxoption taxname field and hsn form field taxname  
+    // actualy taxname in hsnform is integer but hsnobject taxname is refer to my taxlist taxname always shows the label due to that edit mode is not fetching the value in dropdown
+    const matchedOption = taxOptions.find( (opt) => opt.label === hsnObject.taxname );
+
+    setFormData({
+      ...hsnObject,
+      taxname: matchedOption?matchedOption.value :null 
+    });
+    console.log("taxname",hsnObject.taxname);
     setIsEdit(true);
   } else {
     // New mode default Company name should be visible
@@ -131,13 +136,12 @@ function HsnForm({ onClose,onSaved, hsnObject,setHsnObject,navigateToList,handle
         companyno:formData.companyno,
         hsncode: formData.hsncode,
         hsndescription: formData.hsndescription,
-        effective_date:formData.effective_date,
-        taxheaderid: Number(formData.taxheaderid),
-        taxname:formData.taxname,
+        effective_date:new Date(formData.effective_date),
+        taxname:Number(formData.taxname),
         taxrate: formData.taxrate,
         active: formData.active,
-        createdby: formData.createdby || "admin",
-        modifiedby: formData.modifiedby || "admin"
+        createdby:  uname,
+        modifiedby:uname
       };
 
       const method = "POST"
@@ -253,7 +257,7 @@ function HsnForm({ onClose,onSaved, hsnObject,setHsnObject,navigateToList,handle
             <label className="form-label">Tax Name</label>
             <Select
             options={taxOptions}
-            value={taxOptions.find(opt => opt.value === formData?.taxheaderid) || null}
+            value={taxOptions.find(opt => opt.value === formData?.taxname) || null}
             onChange={(selectedTax) =>
                 setFormData({ ...formData, taxname: selectedTax?.value,
                     taxrate: selectedTax?.ttaxrate
@@ -271,16 +275,10 @@ function HsnForm({ onClose,onSaved, hsnObject,setHsnObject,navigateToList,handle
                    readOnly
                    />
           </div> 
-          <div className="col-md-4">
-            <label className="form-label">Effective Date</label>  
-            <br />         
-            <DatePicker
-              selected={selectedDate}
-              onChange={(date) => setSelectedDate(date)}
-              dateFormat="dd/MM/yyyy"
-              className="border p-2 rounded w-full"
-            />
-          </div> 
+         <div className="col-md-4">
+          <label className="form-label">Effective Date</label>  
+          <input type="date" className="form-control" name="effective_date" value={ (formData.effective_date)}   onChange={handleChange} style={{ width: "150px" }} />
+         </div>
           <div className="col-md-2">
             <br />
             <input type="checkbox" className="form-check-input" name="active"

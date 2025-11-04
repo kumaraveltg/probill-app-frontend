@@ -30,7 +30,7 @@ export const DataProvider = ({ children }) => {
   const [total, setTotal] = useState(0);
   
   // fetch countries
-  const fetchCountries = async (skip = 0, limit = 10) => {
+  const fetchCountries = async (skip = 0, limit = 500) => {
   try {
     setLoading(true);
     const res = await authFetch(
@@ -56,7 +56,7 @@ export const DataProvider = ({ children }) => {
 
 
   // fetch states
-  const fetchStates = async (skip = 0, limit = 10) => {
+  const fetchStates = async (skip = 0, limit = 500) => {
     try {
       setLoading(true);
       const res = await authFetch(`${API_URL}/states/?skip=${skip}&limit=${limit}`,
@@ -78,7 +78,7 @@ export const DataProvider = ({ children }) => {
   };
 
   // Cities
-  const fetchCities = async (skip = 0, limit = 10) => {
+  const fetchCities = async (skip = 0, limit = 500) => {
     try {
       setLoading(true); 
       const res = await authFetch(`${API_URL}/cities/?skip=${skip}&limit=${limit}`,
@@ -102,7 +102,7 @@ export const DataProvider = ({ children }) => {
   };
 
   // UOMs - ✅ Added authFetch to dependency array
-  const fetchUoms = useCallback(async (skip = 0, limit = 10) => {
+  const fetchUoms = useCallback(async (skip = 0, limit = 500) => {
     if (!companyid) {
       console.error("Company ID is not set yet!");
       return;
@@ -159,7 +159,7 @@ export const DataProvider = ({ children }) => {
   });
 
 // users List
- const fetchUsers= useCallback( async(skip = 0, limit = 10) => {
+ const fetchUsers= useCallback( async(skip = 0, limit = 500) => {
   try{
     setLoading(true);
     setError(null);
@@ -192,7 +192,7 @@ export const DataProvider = ({ children }) => {
  }, [companyid, accessToken, authFetch] )
  
  // userRole
-const fetchUserRole= useCallback( async(skip = 0, limit = 10) => {
+const fetchUserRole= useCallback( async(skip = 0, limit = 500) => {
   try{
     setLoading(true);
     setError(null);
@@ -222,7 +222,7 @@ const fetchUserRole= useCallback( async(skip = 0, limit = 10) => {
  } ,[companyid, accessToken, authFetch] )
 
  //finyear
-  const fetchFinyr = useCallback(async (skip=0,limit=10) => {
+  const fetchFinyr = useCallback(async (skip=0,limit=500) => {
     console.log("Access Token:", accessToken); 
     try {
       setLoading(true);
@@ -248,7 +248,7 @@ const fetchUserRole= useCallback( async(skip = 0, limit = 10) => {
   },[accessToken,authFetch]);
 
 // TaxMaster- header
-const fetchTaxMaster= useCallback( async(skip= 0, limit = 10) => {
+const fetchTaxMaster= useCallback( async(skip= 0, limit = 500) => {
   console.log("Access Token",accessToken);
   try{
     setLoading(true);
@@ -328,7 +328,7 @@ const fetchHsn = useCallback(async(skip=0,limit=100) => {
   }
 },[companyid,authFetch,accessToken])
 
-const fetchCustomer = useCallback(async(skip=0,limit=50) => {   
+const fetchCustomer = useCallback(async(skip=0,limit=500) => {   
   if(!companyid) {
     console.error("Company Id is not avaialble");
     return;
@@ -355,7 +355,7 @@ const fetchCustomer = useCallback(async(skip=0,limit=50) => {
 },[companyid,authFetch,accessToken])
 
  // fetch countries
-  const fetchCurrencies = async (skip=0,limit=10) => {
+  const fetchCurrencies = async (skip=0,limit=500) => {
     try {
       setLoading(true);
       const res = await fetch(`${API_URL}/currency/getcurrency/?skip=${skip}&limit=${limit}`);

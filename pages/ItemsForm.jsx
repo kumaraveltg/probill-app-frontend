@@ -5,6 +5,7 @@ import { AuthContext } from "../context/AuthContext";
 import { API_URL } from "../components/Config";
 import SearchModal from "../components/SearchModal";
 import Select from "react-select";
+import { NumericFormat } from 'react-number-format';
 
 function ItemsForm({ onClose,onSaved, itemsObject,setItemsObject,navigateToList,handleDelete }) {
   const { fetchItems, items,companyname, companyid  } = useContext(DataContext);
@@ -59,7 +60,41 @@ function ItemsForm({ onClose,onSaved, itemsObject,setItemsObject,navigateToList,
     }));
   }, [taxmaster]);
 
-  const hsnOptions= useMemo(()=> { return  hsn.map((h)=> ({value:h.id,label:h.hsncode}))});
+  const hsnOptions = useMemo(() => {
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+
+  const filtered = hsn.filter((h) => {
+    const fromDate = new Date(h.from_date);
+    const toDate = new Date(h.to_date || today);
+
+    fromDate.setHours(0, 0, 0, 0);
+    toDate.setHours(23, 59, 59, 999); // include end date fully
+
+    const isValid = fromDate <= today && today <= toDate;
+
+    // ✅ Debug line for each record
+    console.log(
+      `HSN ${h.hsncode}: from=${h.from_date}, to=${h.to_date}, include=${isValid}`
+    );
+
+    return isValid;
+  });
+
+  // ✅ Debug final filtered list
+  console.log("Filtered HSN records:", filtered);
+
+  const options = filtered.map((h) => ({
+    value: h.id,
+    label: h.hsncode,
+  }));
+
+  // ✅ Debug final dropdown options
+  console.log("HSN dropdown options:", options);
+
+  return options;
+}, [hsn]);
+   
 
   useEffect(() => {
       fetchUoms();
@@ -280,27 +315,26 @@ useEffect(() => {
         </div>
         </div> */}
         <div className="row mb-3">
-          <div className="col-md-4">
+          <div className="col-md-3">
             <label className="form-label">Item Code *</label>
             <input type="text" className="form-control" name="productcode"
-                   value={formData.productcode} onChange={handleChange} style={{ width: "325px" }} />
+                   value={formData.productcode} onChange={handleChange} style={{ width: "200px" }} />
           </div>
 
-          <div className="col-md-8">
+          <div className="col-md-4">
             <label className="form-label">Item Name *</label>
             <input type="text" className="form-control" name="productname"
                    value={formData.productname} onChange={handleChange} style={{ width: "400px" }} />
-          </div>          
-         </div>
-         <div className="row mb-3"> 
+          </div>  
           <div className="col-md-3">
             <label className="form-label">Item Specification </label>
             <textarea className="form-control" name="productspec"
-                   value={formData.productspec} onChange={handleChange} rows={5} style={{ width: "500px" }} />
-          </div>
-          </div>
+                   value={formData.productspec} onChange={handleChange} rows={5} style={{ width: "500px" ,resize:"none"}} />
+          </div>        
+         </div>
+         
           <div className="row mb-3">
-        <div className="col-md-3">
+        <div className="col-md-2">
             <label className="form-label">Selling UOM</label>
                 <Select
                 options={uomOptions}
@@ -308,13 +342,13 @@ useEffect(() => {
                 onChange={(selectedUom) =>
                     setFormData({ ...formData, selling_uom: selectedUom?.value||null })
                 }
-                placeholder="-- Select UOM Code--"
+                placeholder="Select UOM Code"
                 isClearable
                 isSearchable 
             />
         </div>
 
-        <div className="col-md-3">
+        <div className="col-md-2">
             <label className="form-label">Purchase UOM</label>
             <Select
             options={uomOptions}
@@ -322,34 +356,57 @@ useEffect(() => {
             onChange={(selectedUom) =>
                 setFormData({ ...formData, purchase_uom: selectedUom?.value ||null })
             }
-            placeholder="-- Select UOM Code--"
+            placeholder="Select UOM"
             isClearable
-            isSearchable
-           
+            isSearchable 
+            styles={{width:"125px"}}
             />
         </div>
-        </div>
-         <div className="row mb-2">
-            <div className="col-md-3">
+        <div className="col-md-2">
             <label className="form-label">Selling Price </label>
-            <input type="number" className="form-control" name="selling_price"
-                   value={formData.selling_price} onChange={handleChange} style={{ width: "100px" }} />
+          <NumericFormat
+          name="selling_price"
+          value={formData.selling_price}
+          thousandSeparator={true}
+          decimalScale={2}
+          fixedDecimalScale={true}
+          className="form-control"
+          style={{ width: "125px" }}
+          onValueChange={(values) => {
+            const { floatValue } = values;
+            setFormData({ ...formData, selling_price: floatValue || 0 });
+          }}
+          />
           </div> 
           <div className="col-md-2">
-            <label className="form-label">Cost Price </label>
-            <input type="number" className="form-control" name="cost_price"
-                   value={formData.cost_price} onChange={handleChange} style={{ width: "100px" }} />
-          </div> 
+            <label className="form-label">Cost Price </label> 
+          <NumericFormat
+          name="cost_price"
+          value={formData.cost_price}
+          thousandSeparator={true}
+          decimalScale={2}
+          fixedDecimalScale={true}
+          className="form-control"
+          style={{ width: "125px" }}
+          onValueChange={(values) => {
+            const { floatValue } = values;
+            setFormData({ ...formData, cost_price: floatValue || 0 });
+          }}
+          />
+          </div>
           <div className="col-md-3">
             <label className="form-label">Hsn Code</label>
             <Select options={hsnOptions}   
                    value={hsnOptions.find(opt=> opt.label === formData?.hsncode)|| ""} 
                    onChange={(selectedHsn) => setFormData({...formData,hsncode:selectedHsn?.label})}   />
           </div> 
+        </div>
+         <div className="row mb-3"> 
+          
             
          </div>
          <div className="row mb-3">
-            <div className="col-md-4">
+            <div className="col-md-2">
             <label className="form-label">Tax Name</label>
             <Select
             options={taxOptions}
@@ -359,25 +416,28 @@ useEffect(() => {
                     taxrate: selectedTax?.ttaxrate
                  })
             }
-            placeholder="-- Select Tax Name--"
+            placeholder="Select Tax Name"
             isClearable
             isSearchable           
             />  
           </div> 
-          <div className="col-md-8">
+          <div className="col-md-2">
             <label className="form-label">TaxRate</label>
             <input type="number" className="form-control" name="taxrate"
-                   value={formData.taxrate} onChange={selectedTax}  style={{ width: "300px" }}
+                   value={formData.taxrate} onChange={selectedTax} 
                    readOnly
                    />
           </div> 
-         </div>
-
-          <div className="form-check mb-3">
+           <div className="col-md-8">
+            <br />
+            <br />
             <input type="checkbox" className="form-check-input" name="active"
                    checked={formData.active} onChange={handleChange} />
             <label className="form-check-label">Active</label>
           </div>
+         </div>
+
+         
 
           <div>
             <button type="submit" className="btn btn-primary me-2" disabled={loading}>

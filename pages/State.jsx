@@ -35,7 +35,7 @@ const filteredStates = states.filter(c =>
 );
 useEffect(() => {
   fetchStates(page * limit, limit);
-}, [page,limit]);
+}, [page,limit,total]);
 
  
 
