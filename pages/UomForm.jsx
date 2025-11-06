@@ -59,7 +59,7 @@ function UomForm({ onClose,OnSaved, uomObject,setUomObject,navigateToList,handle
     
     if (Array.isArray(uoms)) {
       const match = uoms.find(
-        (c) => c.companyid === (companyid ?? defaultcompanyid)
+        (c) => c.companyid === ( defaultcompanyid)
       );
       console.log("Matched company:", match);
       if (match) {
@@ -70,12 +70,12 @@ function UomForm({ onClose,OnSaved, uomObject,setUomObject,navigateToList,handle
     setFormData((prev) => ({
       ...prev,
       id: null,
-      companyid: companyid ?? defaultcompanyid,
+      companyid: defaultcompanyid,
       companyname: companyname ?? defaultCompanyName,
       uomcode: "",
       uomname: "",
       active: true,
-      companyno: companyno ?? cno,
+      companyno:  cno,
       createdby: uname,
       modifiedby:uname,
     }));

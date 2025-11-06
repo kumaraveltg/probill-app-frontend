@@ -6,6 +6,10 @@ import { API_URL } from "../components/Config";
 import SearchModal from "../components/SearchModal";
 import Select from "react-select";
 import { NumericFormat } from 'react-number-format';
+import UomForm from '../pages/UomForm';
+import HsnForm from '../pages/HsnForm';
+import TaxMasterForm from '../pages/TaxMasterForm';
+
 
 function ItemsForm({ onClose,onSaved, itemsObject,setItemsObject,navigateToList,handleDelete }) {
   const { fetchItems, items,companyname, companyid  } = useContext(DataContext);
@@ -39,6 +43,9 @@ function ItemsForm({ onClose,onSaved, itemsObject,setItemsObject,navigateToList,
   const{uoms,fetchUoms,taxmaster,fetchTaxMaster,hsn,fetchHsn} = useData();
   const [selectedTax, setSelectedTax] = useState('');
   const [selectedUom, setSelectedUom] = useState('');
+  const [showModalUom,setShowModalUom]= useState(false);
+  const [showModalTax,setShowModalTax]= useState(false);
+  const [showModalHSN,setShowModalHSN]= useState(false);
 
   const fallbackParams = JSON.parse(localStorage.getItem("globalParams") || "{}");
   const uname = ctxUsername || fallbackParams.username || "admin";
@@ -103,6 +110,18 @@ function ItemsForm({ onClose,onSaved, itemsObject,setItemsObject,navigateToList,
     }, [fetchUoms,fetchTaxMaster,fetchHsn]); 
  
   
+    const handleOpenModalUom= ()=> {
+      setShowModalUom(true);
+    }
+
+    const handleOpenModalHSN= ()=> {
+      setShowModalHSN(true);
+    }
+
+    const handleOpenModalTax= ()=> {
+      setShowModalTax(true);
+    }
+
 
   const resetForm = () => {
   let defaultCompanyName = "Default Company";
@@ -325,31 +344,48 @@ useEffect(() => {
             <label className="form-label">Item Name *</label>
             <input type="text" className="form-control" name="productname"
                    value={formData.productname} onChange={handleChange} style={{ width: "400px" }} />
-          </div>  
-          <div className="col-md-3">
+          </div>   
+         </div>
+         <div className="row mb-3">
+           <div className="col-md-7">
             <label className="form-label">Item Specification </label>
             <textarea className="form-control" name="productspec"
-                   value={formData.productspec} onChange={handleChange} rows={5} style={{ width: "500px" ,resize:"none"}} />
+                   value={formData.productspec} onChange={handleChange} rows={5} />
           </div>        
          </div>
          
           <div className="row mb-3">
-        <div className="col-md-2">
+        <div className="custom-col2-5"> 
             <label className="form-label">Selling UOM</label>
+            <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                <div style={{width:"200px"}}>
                 <Select
                 options={uomOptions}
                 value={uomOptions.find(opt => opt.value === formData?.selling_uom) || null}
                 onChange={(selectedUom) =>
                     setFormData({ ...formData, selling_uom: selectedUom?.value||null })
                 }
-                placeholder="Select UOM Code"
+                placeholder="Select UOM"
                 isClearable
                 isSearchable 
-            />
-        </div>
+            /></div>
+            <button onClick={ () => handleOpenModalUom(true)}
+                style={{
+                  padding: "4px 12px",
+                  fontSize: "16px",
+                  cursor: "pointer",
+                  height: "38px", // matches typical react-select height
+                }}
+              >
+                +
+              </button> 
 
-        <div className="col-md-2">
+        </div>
+        </div>        
+        <div className="custom-col2-5">
             <label className="form-label">Purchase UOM</label>
+            <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+            <div style={{width:"200px"}}>
             <Select
             options={uomOptions}
             value={uomOptions.find(opt => opt.value === formData?.purchase_uom) || null}
@@ -359,8 +395,19 @@ useEffect(() => {
             placeholder="Select UOM"
             isClearable
             isSearchable 
-            styles={{width:"125px"}}
-            />
+            styles={{width:"200px"}}
+            /> </div>
+            <button onClick={ () => handleOpenModalUom(true)}
+                style={{
+                  padding: "4px 12px",
+                  fontSize: "16px",
+                  cursor: "pointer",
+                  height: "38px", // matches typical react-select height
+                }}
+              >
+                +
+              </button> 
+         </div>
         </div>
         <div className="col-md-2">
             <label className="form-label">Selling Price </label>
@@ -371,7 +418,7 @@ useEffect(() => {
           decimalScale={2}
           fixedDecimalScale={true}
           className="form-control"
-          style={{ width: "125px" }}
+          style={{ width: "150px" }}
           onValueChange={(values) => {
             const { floatValue } = values;
             setFormData({ ...formData, selling_price: floatValue || 0 });
@@ -387,7 +434,7 @@ useEffect(() => {
           decimalScale={2}
           fixedDecimalScale={true}
           className="form-control"
-          style={{ width: "125px" }}
+          style={{ width: "150px" }}
           onValueChange={(values) => {
             const { floatValue } = values;
             setFormData({ ...formData, cost_price: floatValue || 0 });
@@ -396,9 +443,24 @@ useEffect(() => {
           </div>
           <div className="col-md-3">
             <label className="form-label">Hsn Code</label>
+            <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+              <div style={{width:"250px"}}>
             <Select options={hsnOptions}   
                    value={hsnOptions.find(opt=> opt.label === formData?.hsncode)|| ""} 
-                   onChange={(selectedHsn) => setFormData({...formData,hsncode:selectedHsn?.label})}   />
+                   onChange={(selectedHsn) => setFormData({...formData,hsncode:selectedHsn?.label})}
+                    />
+                    </div>
+         <button onClick={ () => handleOpenModalHSN(true)}
+                style={{
+                  padding: "4px 12px",
+                  fontSize: "16px",
+                  cursor: "pointer",
+                  height: "38px", // matches typical react-select height
+                }}
+              >
+                +
+              </button> 
+         </div>
           </div> 
         </div>
          <div className="row mb-3"> 
@@ -406,8 +468,10 @@ useEffect(() => {
             
          </div>
          <div className="row mb-3">
-            <div className="col-md-2">
+            <div className="col-md-3 ">
             <label className="form-label">Tax Name</label>
+            <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+              <div style={{width:"175px"}}>
             <Select
             options={taxOptions}
             value={taxOptions.find(opt => opt.value === formData?.taxname) || null}
@@ -416,10 +480,22 @@ useEffect(() => {
                     taxrate: selectedTax?.ttaxrate
                  })
             }
-            placeholder="Select Tax Name"
+            placeholder="Select Tax "
             isClearable
             isSearchable           
             />  
+            </div>
+            <button onClick={ () => handleOpenModalTax(true)}
+                style={{
+                  padding: "4px 12px",
+                  fontSize: "16px",
+                  cursor: "pointer",
+                  height: "38px", // matches typical react-select height
+                }}
+              >
+                +
+              </button> 
+            </div>
           </div> 
           <div className="col-md-2">
             <label className="form-label">TaxRate</label>
@@ -428,7 +504,7 @@ useEffect(() => {
                    readOnly
                    />
           </div> 
-           <div className="col-md-8">
+           <div className="col-md-5">
             <br />
             <br />
             <input type="checkbox" className="form-check-input" name="active"
@@ -464,6 +540,84 @@ useEffect(() => {
         setShowModal(false);
         }}
     />
+    {/* ✅ State Modal */}
+      {showModalHSN && (
+        <>
+          <div className="modal fade show d-block" tabIndex="-1" role="dialog">
+            <div className="modal-dialog modal-lg" role="document">
+              <div className="modal-content">
+                <div className="modal-header">
+                  <h5 className="modal-title">Add New HSN</h5>
+                  <button type="button" className="btn-close" onClick={() => setShowModalHSN(false)}></button>
+                </div>
+                <div className="modal-body">
+                  <HsnForm
+                    onSaved={() => {
+                      fetchHsn();
+                      setShowModalHSN(false);
+                    }}
+                    onClose={() => setShowModalHSN(false)}
+                  />
+                </div>
+              </div>
+            </div>
+          </div>
+          <div className="modal-backdrop fade show" onClick={() => setShowModalHSN(false)}></div>
+        </>
+      )}
+           
+    {/* ✅ TAX Modal */}
+      {showModalTax && (
+        <>
+          <div className="modal fade show d-block" tabIndex="-1" role="dialog">
+            <div className="modal-dialog modal-lg" role="document">
+              <div className="modal-content">
+                <div className="modal-header">
+                  <h5 className="modal-title">Add New Tax</h5>
+                  <button type="button" className="btn-close" onClick={() => setShowModalTax(false)}></button>
+                </div>
+                <div className="modal-body">
+                  <TaxMasterForm
+                    onSaved={() => {
+                      fetchTaxMaster();
+                      setShowModalTax(false);
+                    }}
+                    onClose={() => setShowModalTax(false)}
+                  />
+                </div>
+              </div>
+            </div>
+          </div>
+          <div className="modal-backdrop fade show" onClick={() => setShowModalTax(false)}></div>
+        </>
+      )}
+           
+    {/* ✅ State Modal */}
+      {showModalUom && (
+        <>
+          <div className="modal fade show d-block" tabIndex="-1" role="dialog">
+            <div className="modal-dialog modal-lg" role="document">
+              <div className="modal-content">
+                <div className="modal-header">
+                  <h5 className="modal-title">Add New UOM</h5>
+                  <button type="button" className="btn-close" onClick={() => setShowModalUom(false)}></button>
+                </div>
+                <div className="modal-body">
+                  <UomForm
+                    onSaved={() => {
+                      fetchUoms();
+                      setShowModalUom(false);
+                    }}
+                    onClose={() => setShowModalUom(false)}
+                  />
+                </div>
+              </div>
+            </div>
+          </div>
+          <div className="modal-backdrop fade show" onClick={() => setShowModalUom(false)}></div>
+        </>
+      )}
+           
         </div>
   );
 }

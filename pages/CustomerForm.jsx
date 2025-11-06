@@ -5,6 +5,9 @@ import { AuthContext } from "../context/AuthContext";
 import { API_URL } from "../components/Config";
 import SearchModal from "../components/SearchModal";
 import DataContext, { useData } from "../context/DataContext";
+import CurrencyForm from "./CurrencyForm";
+import StateForm from "./StateForm";
+import CityForm from "./CityForm";
 
 function CustomerForm({ onClose, onSaved, customerObject, setCustomerObject, navigateToList, handleDelete }) {
   const { customer, companyname, companyno, companyid } = useContext(DataContext);
@@ -71,6 +74,9 @@ function CustomerForm({ onClose, onSaved, customerObject, setCustomerObject, nav
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState("");
   const [selectAll, setSelectAll] = useState(false);
+  const [showModalCity,setShowModalCity]= useState(false);
+  const [showModalState,setShowModalState]= useState(false);
+  const [showModalCurrency,setShowModalCurrency]= useState(false);
 
   const fallbackParams = JSON.parse(localStorage.getItem("globalParams") || "{}");
   const uname = ctxUsername || fallbackParams.username || "admin";
@@ -114,7 +120,18 @@ function CustomerForm({ onClose, onSaved, customerObject, setCustomerObject, nav
   }
 }, [companies, defaultcompanyid ]);
 
- 
+ const handleModalCity = () => {
+  setShowModalCity(true);
+ };
+
+ const handleModalState = () => {
+  setShowModalState(true);
+ };
+
+ const handleModalCurrency= () => {
+  setShowModalCurrency(true);
+ };
+
   // Reset form for new entry
   const resetForm = () => {
     const defaultCompany = companies.find(c => c.companyid === defaultcompanyid) || { companyname: "", companyno: "" };
@@ -478,37 +495,37 @@ function CustomerForm({ onClose, onSaved, customerObject, setCustomerObject, nav
           </div>
           </div> 
           <div className="row mb-3">
-            <div className="col-md-6">
+            <div className="col-md-4">
               <label className="form-label">Customer Name</label>
               <input type="text" className="form-control" name="customername" value={formData.customername} onChange={handleChange}   />
             </div>
-            <div className="col-md-6">
+            <div className="col-md-2">
               <label className="form-label">Contact Person</label>
               <input type="text" className="form-control" name="contactperson" value={formData.contactperson} onChange={handleChange} style={{ width: "350px" }} />
             </div>
           </div>
 
           <div className="row mb-3">
-            <div className="col-md-3">
+            <div className="col-md-2">
               <label className="form-label">Customer Mobile</label>
-              <input type="text" className="form-control" name="customer_mobile" value={formData.customer_mobile} onChange={handleChange} style={{ width: "250px" }} />
+              <input type="text" className="form-control" name="customer_mobile" value={formData.customer_mobile} onChange={handleChange}   />
             </div>
-            <div className="col-md-3">
+            <div className="col-md-2">
               <label className="form-label">Customer Phone</label>
-              <input type="text" className="form-control" name="customer_phone" value={formData.customer_phone} onChange={handleChange} style={{ width: "250px" }} />
+              <input type="text" className="form-control" name="customer_phone" value={formData.customer_phone} onChange={handleChange}   />
             </div>
-            <div className="col-md-3">
+            <div className="col-md-4">
               <label className="form-label">Customer Email</label>
-              <input type="text" className="form-control" name="customer_email" value={formData.customer_email} onChange={handleChange} style={{ width: "250px" }} />
+              <input type="text" className="form-control" name="customer_email" value={formData.customer_email} onChange={handleChange} style={{ width: "350px" }} />
             </div>
             <div className="col-md-3">
               <label className="form-label">Customer WebSite</label>
-              <input type="text" className="form-control" name="customer_website" value={formData.customer_website} onChange={handleChange} style={{ width: "250px" }} />
+              <input type="text" className="form-control" name="customer_website" value={formData.customer_website} onChange={handleChange} style={{ width: "350px" }} />
             </div>
           </div>
 
           <div className="row mb-3">
-            <div className="col-md-3">
+            <div className="col-md-4">
               <label className="form-label">GST Type</label>
               <Select
                 options={gstOptions}
@@ -519,12 +536,36 @@ function CustomerForm({ onClose, onSaved, customerObject, setCustomerObject, nav
                 isSearchable
               />
             </div>
-            <div className="col-md-3">
+            <div className="col-md-2">
               <label className="form-label">GST No</label>
-              <input type="text" className="form-control" name="gstin" value={formData.gstin} onChange={handleChange} style={{ width: "250px" }} />
+              <input type="text" className="form-control" name="gstin" value={formData.gstin} onChange={handleChange}  />
+            </div>
+            <div className="col-md-3">
+              <label className="form-label">Currency</label>
+              <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+              <Select
+                options={currencyOptions}
+                value={currencyOptions.find(opt => opt.value === formData?.currencyid) || null}
+                onChange={(selected) => setFormData(prev => ({ ...prev, currencyid: selected?.value }))}
+                placeholder="Choose Currency"
+                isClearable
+                isSearchable      
+              />
+              <button onClick={ () => handleModalCurrency(true)}
+                style={{
+                  padding: "4px 12px",
+                  fontSize: "16px",
+                  cursor: "pointer",
+                  height: "38px", // matches typical react-select height
+                }}
+              >
+                +
+              </button>
+              </div>
             </div>
             <div className="col-md-3">
               <label className="form-label">Place of Supply</label>
+              <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
               <Select
                 options={supplyOptions}
                 value={supplyOptions.find(opt => opt.label === formData?.placeof_supply) || null}
@@ -533,24 +574,20 @@ function CustomerForm({ onClose, onSaved, customerObject, setCustomerObject, nav
                 isClearable
                 isSearchable                
               />
+              <button onClick={ () => handleModalState(true)}
+                style={{
+                  padding: "4px 12px",
+                  fontSize: "16px",
+                  cursor: "pointer",
+                  height: "38px", // matches typical react-select height
+                }}
+              >
+                +
+              </button>
             </div>
-            <div className="col-md-3">
-              <label className="form-label">Currency</label>
-              <Select
-                options={currencyOptions}
-                value={currencyOptions.find(opt => opt.value === formData?.currencyid) || null}
-                onChange={(selected) => setFormData(prev => ({ ...prev, currencyid: selected?.value }))}
-                placeholder="-- Select Currency--"
-                isClearable
-                isSearchable                    
-                styles={{width:"100px"}}   
-              />
-            </div>
-          </div>
-
-          <div className="row mb-3">
-            
-            
+            </div> 
+          </div> 
+          <div className="row mb-3"> 
             <div className="col-md-2 d-flex align-items-center">
               <input type="checkbox" className="form-check-input me-2" name="active" checked={formData.active} onChange={handleChange} />
               <label className="form-check-label">Active</label>
@@ -622,6 +659,7 @@ function CustomerForm({ onClose, onSaved, customerObject, setCustomerObject, nav
 
             <div className="col-md-6 mb-2">
               <label>City</label>
+              <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
               <select
                 className="form-select"
                 name="cityid"
@@ -635,10 +673,22 @@ function CustomerForm({ onClose, onSaved, customerObject, setCustomerObject, nav
                   </option>
                 ))}
               </select>
+              <button onClick={ () => handleModalCity(true)}
+                style={{
+                  padding: "4px 12px",
+                  fontSize: "16px",
+                  cursor: "pointer",
+                  height: "38px", // matches typical react-select height
+                }}
+              >
+                +
+              </button> 
+              </div>
             </div>
 
             <div className="col-md-6 mb-2">
               <label>State</label>
+              <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
               <select
                 className="form-select"
                 name="stateid"
@@ -652,6 +702,17 @@ function CustomerForm({ onClose, onSaved, customerObject, setCustomerObject, nav
                   </option>
                 ))}
               </select>
+              <button onClick={ () => handleModalState(true)}
+                style={{
+                  padding: "4px 12px",
+                  fontSize: "16px",
+                  cursor: "pointer",
+                  height: "38px", // matches typical react-select height
+                }}
+              >
+                +
+              </button> 
+              </div>
             </div>
 
             <div className="col-md-6 mb-2">
@@ -714,6 +775,7 @@ function CustomerForm({ onClose, onSaved, customerObject, setCustomerObject, nav
 
             <div className="col-md-6 mb-2">
               <label>City</label>
+                <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
               <select
                 className="form-select"
                 name="shipping_cityid"
@@ -728,10 +790,22 @@ function CustomerForm({ onClose, onSaved, customerObject, setCustomerObject, nav
                   </option>
                 ))}
               </select>
+              <button onClick={ () => handleModalCity(true)}
+                style={{
+                  padding: "4px 12px",
+                  fontSize: "16px",
+                  cursor: "pointer",
+                  height: "38px", // matches typical react-select height
+                }}
+              >
+                +
+              </button> 
+            </div>
             </div>
 
             <div className="col-md-6 mb-2">
               <label>State</label>
+              <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
               <select
                 className="form-select"
                 name="shipping_stateid"
@@ -746,6 +820,17 @@ function CustomerForm({ onClose, onSaved, customerObject, setCustomerObject, nav
                   </option>
                 ))}
               </select>
+              <button onClick={ () => handleModalState(true)}
+                style={{
+                  padding: "4px 12px",
+                  fontSize: "16px",
+                  cursor: "pointer",
+                  height: "38px", // matches typical react-select height
+                }}
+              >
+                +
+              </button> 
+            </div>
             </div>
 
             <div className="col-md-6 mb-2">
@@ -859,6 +944,84 @@ function CustomerForm({ onClose, onSaved, customerObject, setCustomerObject, nav
           setShowModal(false);
         }}
       />
+    {/* ✅ State Modal */}
+      {showModalCity && (
+        <>
+          <div className="modal fade show d-block" tabIndex="-1" role="dialog">
+            <div className="modal-dialog modal-lg" role="document">
+              <div className="modal-content">
+                <div className="modal-header">
+                  <h5 className="modal-title">Add New State</h5>
+                  <button type="button" className="btn-close" onClick={() => setShowModalCity(false)}></button>
+                </div>
+                <div className="modal-body">
+                  <CityForm
+                    onSaved={() => {
+                      fetchCities();
+                      setShowModalCity(false);
+                    }}
+                    onClose={() => setShowModalCity(false)}
+                  />
+                </div>
+              </div>
+            </div>
+          </div>
+          <div className="modal-backdrop fade show" onClick={() => setShowModalCity(false)}></div>
+        </>
+      )}
+
+      {/* ✅ State Modal */}
+      {showModalState && (
+        <>
+          <div className="modal fade show d-block" tabIndex="-1" role="dialog">
+            <div className="modal-dialog modal-lg" role="document">
+              <div className="modal-content">
+                <div className="modal-header">
+                  <h5 className="modal-title">Add New State</h5>
+                  <button type="button" className="btn-close" onClick={() => setShowModalState(false)}></button>
+                </div>
+                <div className="modal-body">
+                  <StateForm
+                    onSaved={() => {
+                      fetchStates();
+                      setShowModalState(false);
+                    }}
+                    onClose={() => setShowModalState(false)}
+                  />
+                </div>
+              </div>
+            </div>
+          </div>
+          <div className="modal-backdrop fade show" onClick={() => setShowModalState(false)}></div>
+        </>
+      )}
+
+      {/* ✅ State Modal */}
+      {showModalCurrency && (
+        <>
+          <div className="modal fade show d-block" tabIndex="-1" role="dialog">
+            <div className="modal-dialog modal-lg" role="document">
+              <div className="modal-content">
+                <div className="modal-header">
+                  <h5 className="modal-title">Add New Currency</h5>
+                  <button type="button" className="btn-close" onClick={() => setShowModalCurrency(false)}></button>
+                </div>
+                <div className="modal-body">
+                  <CurrencyForm
+                    onSaved={() => {
+                      fetchCurrencies();
+                      setShowModalCurrency(false);
+                    }}
+                    onClose={() => setShowModalCurrency(false)}
+                  />
+                </div>
+              </div>
+            </div>
+          </div>
+          <div className="modal-backdrop fade show" onClick={() => setShowModalCurrency(false)}></div>
+        </>
+      )}
+
     </div>
   );
 }

@@ -4,17 +4,13 @@
  import { API_URL } from '../components/Config';
  import Select from 'react-select';
  import SearchModal from '../components/SearchModal';
- import { useMemo } from 'react';
- import ModalOpen from '../components/ModalOpen';
- import StateForm from '../pages/State'; 
- import StateModalForm from '../pages/StateModalForm';
+ import { useMemo } from 'react';  
+ import StateForm from '../pages/StateForm'
 
 // City Form Component
 function CityForm({ cityValueEdit, onClose, onSaved, navigateToList, handleDelete }) {
-  const { states  } = useContext(DataContext);
+  const { states ,fetchStates } = useContext(DataContext);
   const [loading, setLoading] = useState(false);
-  const [addedStates,setAddedStates]= useState([]); // to refresh state list after adding new state
-  const [isStateModalOpen, setIsStateModalOpen] = useState(false); // State Modal
   const [formData, setFormData] = useState({
       id: cityValueEdit?.id ?? null,
     citycode: cityValueEdit?.citycode ?? "",
@@ -28,11 +24,12 @@ function CityForm({ cityValueEdit, onClose, onSaved, navigateToList, handleDelet
     active: cityValueEdit?.active ?? true,
     createdby: cityValueEdit?.createdby ?? "Admin",  });
     const [showModal, setShowModal] = useState(false);
+    const [showStateModal, setShowStateModal] = useState(false);
     const [message, setMessage] = useState("");
     
     
    const stateOptions = useMemo(() => 
-  [...states, ... addedStates  ].map(s => ({
+   states.map(s => ({
     value: s.id,
     label: s.statename,
     code: s.statecode,
@@ -40,36 +37,14 @@ function CityForm({ cityValueEdit, onClose, onSaved, navigateToList, handleDelet
     countryname: s.countryname,
     countrycode: s.countrycode
   }))
-, [states,addedStates ]); // Recompute when states or addedStates change
+, [states]); // Recompute when states or addedStates change
     
    
-    
-    const handleStateSave= (newState)=>{     
-      if (!newState) return;  
-      setFormData((prev)=>({
-        ...prev,
-      stateid: newState.id ||null,
-      statename: newState.statename||"",
-      statecode: newState.statecode||"",
-      countryid: newState.countryid||null,
-      countryname: newState.countryname||"",
-      countrycode: newState.countrycode||"",
-      }));
-      setAddedStates((prev)=>[...prev,newState]); // to refresh state dropdown
-       
-      
-      if (typeof fetchStates === "function") {
-        fetchStates();
-        }
-    
-      setIsStateModalOpen(false);
-   
-    };
+  useEffect( () => {
+    fetchStates();
+  },[]
+  )
 
-     useEffect(() => {
-       console.log("StateForm Modal Open Status:", isStateModalOpen);
-      }, [isStateModalOpen]);   
- 
   
 
     // For Edit the City form data
@@ -146,6 +121,10 @@ function CityForm({ cityValueEdit, onClose, onSaved, navigateToList, handleDelet
         [name]: type === "checkbox" ? checked : value,
       });
     };
+
+    const handleOpenModal = ()=>{
+    setShowStateModal(true);
+  };
     // Form submission handler
     const handleSubmit = async (e) => {
       e.preventDefault(); 
@@ -279,7 +258,7 @@ function CityForm({ cityValueEdit, onClose, onSaved, navigateToList, handleDelet
             />
           </div>
             <div className="mb-3">
-              <label className='required' htmlFor='statename'  >State Name</label>
+            <label  >State Name</label>
             <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
               <div style={{ width: "300px" }}>
                 <Select
@@ -296,7 +275,7 @@ function CityForm({ cityValueEdit, onClose, onSaved, navigateToList, handleDelet
                 />
               </div>
               <button
-                onClick={ () => setIsStateModalOpen(true)}
+                onClick={ () => handleOpenModal(true)}
                 style={{
                   padding: "4px 12px",
                   fontSize: "16px",
@@ -360,6 +339,31 @@ function CityForm({ cityValueEdit, onClose, onSaved, navigateToList, handleDelet
           </button>
         </form>
       </div>
+        {/* ✅ State Modal */}
+      {showStateModal && (
+        <>
+          <div className="modal fade show d-block" tabIndex="-1" role="dialog">
+            <div className="modal-dialog modal-lg" role="document">
+              <div className="modal-content">
+                <div className="modal-header">
+                  <h5 className="modal-title">Add New State</h5>
+                  <button type="button" className="btn-close" onClick={() => setShowStateModal(false)}></button>
+                </div>
+                <div className="modal-body">
+                  <StateForm
+                    onSaved={() => {
+                      fetchStates();
+                      setShowStateModal(false);
+                    }}
+                    onClose={() => setShowStateModal(false)}
+                  />
+                </div>
+              </div>
+            </div>
+          </div>
+          <div className="modal-backdrop fade show" onClick={() => setShowStateModal(false)}></div>
+        </>
+      )}
              
       {/* Search Modal */}
       <SearchModal
@@ -387,29 +391,7 @@ function CityForm({ cityValueEdit, onClose, onSaved, navigateToList, handleDelet
             modifiedby: selectedCity.modifiedby || "Admin",
           }));
         }}
-      />
-      {/* State Modal for adding new state */}
-      <ModalOpen
-        isOpen={isStateModalOpen}
-        onClose={() => {
-          console.log("Closing State Modal");
-          setIsStateModalOpen(false)}}
-        title="Add New State"
-      >
-        <div>
-          <p> Modla is Open:{isStateModalOpen? "Yes":"No"} </p>
-        <StateModalForm
-           
-          stateValueEdit={null} // new state
-          onClose={() => {
-            console.log("StateForm onClose called");
-            setIsStateModalOpen(false)}}
-          onSaved = {handleStateSave}
-        />
-        </div>
-      </ModalOpen>
-   
-      
+      />  
     </div>
   );  
 }

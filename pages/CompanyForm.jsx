@@ -1,11 +1,12 @@
 import { useState, useEffect, useContext, useMemo } from "react";
+import { AuthContext } from "../context/AuthContext";
+import DataContext from "../context/DataContext"; 
 import { FaSave, FaTimes } from "react-icons/fa";
 import { API_URL } from "../components/Config";
 import SearchModal from "../components/SearchModal";  
-import Select from "react-select";  
-import Company from "./Company";
-import { AuthContext } from "../context/AuthContext";
-import DataContext from "../context/DataContext";
+import Select from "react-select";   
+import CurrencyForm from '../pages/CurrencyForm'
+
 
 
 
@@ -33,6 +34,7 @@ function CompanyForm({ onClose,onSaved, companyObject,navigateToList }) {
   const [isEdit, setIsEdit] = useState(false);
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState(""); 
+  const [showCurrencyModal,setShowCurrencyModal]= useState(false);
 
   useEffect(() => {
     fetchCurrencies();
@@ -49,7 +51,9 @@ function CompanyForm({ onClose,onSaved, companyObject,navigateToList }) {
         ) )},[currencies]
     );
   
- 
+ const handleOpenModal= () => {
+  setShowCurrencyModal(true);
+ }
 
  const resetForm = () => {
   let selectedCurrency = null;
@@ -299,14 +303,15 @@ function CompanyForm({ onClose,onSaved, companyObject,navigateToList }) {
              value={formData.emailid} onChange={handleChange}   />
           </div>
          
-          <div className="col-md-4 offset-md-1" >
+          <div className="col-md-3 offset-md-1" >
             <label className="form-label">Contact Person</label>
             <input type="text" className="form-control" name="contactperson"
                    value={formData.contactperson} onChange={handleChange}  />
           </div>
-          <div className="col-md-2">
-            <label className="required" htmlFor="countryId">Currency </label>
-            <div  >
+          <div className="col-md-4 "> 
+            <label>Currency </label>
+            <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+            <div>
               <Select
                 options={currecnySelection}
                 value={currecnySelection.find(opt => opt.value === formData.currency) || null}
@@ -324,6 +329,18 @@ function CompanyForm({ onClose,onSaved, companyObject,navigateToList }) {
                   option.label.toLowerCase().startsWith(inputValue.toLowerCase())
                 }
               />
+               </div>
+              <button onClick={ () => handleOpenModal(true)}
+                style={{
+                  padding: "4px 12px",
+                  fontSize: "16px",
+                  cursor: "pointer",
+                  height: "38px", // matches typical react-select height
+                }}
+              >
+                +
+              </button> 
+             
             </div>
           </div>
           </div>
@@ -355,6 +372,33 @@ function CompanyForm({ onClose,onSaved, companyObject,navigateToList }) {
         setShowModal(false);
         }}
     />
+    {/* ✅ State Modal */}
+      {showCurrencyModal && (
+        <>
+          <div className="modal fade show d-block" tabIndex="-1" role="dialog">
+            <div className="modal-dialog modal-lg" role="document">
+              <div className="modal-content">
+                <div className="modal-header">
+                  <h5 className="modal-title">Add New Currency</h5>
+                  <button type="button" className="btn-close" onClick={() => setShowCurrencyModal(false)}></button>
+                </div>
+                <div className="modal-body">
+                  <CurrencyForm
+                    onSaved={() => {
+                      fetchCurrencies();
+                      setShowCurrencyModal(false);
+                    }}
+                    onClose={() => setShowCurrencyModal(false)}
+                  />
+                </div>
+              </div>
+            </div>
+          </div>
+          <div className="modal-backdrop fade show" onClick={() => setShowCurrencyModal(false)}></div>
+        </>
+      )}
+           
+
         </div>
   );
 }

@@ -9,9 +9,11 @@ import DataContext, { useData } from "../context/DataContext";
 import { PDFDownloadLink, PDFViewer } from "@react-pdf/renderer"
 import { pdf } from "@react-pdf/renderer";
 import InvoicePDF from "./InvoicePDF"; 
+import CustomerForm from "./CustomerForm";
+import ItemsForm from "./ItemsForm";
 
 
-function InvoiceForm({ onClose, onSaved, invoiceObject, setInvoiceObject, navigateToList, handleDelete,invoiceno }) {
+function InvoiceForm({ onClose, onSaved, invoiceObject, setInvoiceObject, navigateToList, handleDelete,invoiceno,   }) {
   const { invoice, companyname, companyno, companyid } = useContext(DataContext);
   const { acessToken, authFetch, username: ctxUsername, companyid: defaultcompanyid, companyno: defaultCompanyno } = useContext(AuthContext);
   const {  customer,fetchCustomer,items,fetchItems, companies,fetchCompanies,taxmaster,fetchTaxMaster,uoms,fetchUoms} = useData();
@@ -55,6 +57,8 @@ function InvoiceForm({ onClose, onSaved, invoiceObject, setInvoiceObject, naviga
   const [pdfDetails,setPdfDetails]= useState([])
   const [pdfFooter,setPdfFooter]= useState([])
   const [showPdfModal, setShowPdfModal] = useState(false);
+  const [showModalCustomer,setShowModalCustomer]= useState(false);
+  const [showModalItem,setShowModalItem] = useState(false);
 
   const fallbackParams = JSON.parse(localStorage.getItem("globalParams") || "{}");
   const uname = ctxUsername || fallbackParams.username || "admin";
@@ -82,7 +86,28 @@ useEffect(() => {
     }
 }, [companies.length]); // no need to include functions if they are stable
 
- 
+// From item name dropdown to  Add a Item master 
+const customStyles = {
+    menuList: (base) => ({
+      ...base,
+      maxHeight: "200px", // height for 8 rows roughly
+      overflowY: "auto",
+    }),
+    option: (base, { data }) => ({
+      ...base,
+      backgroundColor:
+        data.value === "__add_new__" ? "#e6ffe6" : base.backgroundColor,
+      color: data.value === "__add_new__" ? "#007700" : base.color,
+      fontWeight: data.value === "__add_new__" ? "bold" : "normal",
+    }),
+  }; 
+
+const enhancedItemOptions = [
+    ...itemOptions.slice(0, 4), // first 4 visible items
+    { value: "__add_new__", label: "➕ Add New Item" },
+    ...itemOptions.slice(4), // rest come after, scrollable
+  ];
+
 
   useEffect(() => {
   if (  Array.isArray(companies) && companies.length > 0) {
@@ -286,14 +311,23 @@ useEffect(() => {
   loadEditData();
   }, [invoiceObject, customer, fetchInvoiceDetails]);
 
+  const handleOpenModalCustomer = () => {
+    setShowModalCustomer(true);
+  };
+
+  const handleOpenModalItem = () => {
+    setShowModalItem(true);
+  };
+
  
   // Generic change handler (handles checkboxes and text/select)
   const handleChange = (e) => {
     const { name, type } = e.target;
     const value = type === "checkbox" ? e.target.checked : e.target.value;  
-    setFormData(prev => ({ ...prev, [name]: value }));
+    setFormData(prev => ({ ...prev, [name]: value })); 
   };
  
+  
 
   // Add Row in Grid
  const addInvdetailRow = () => {
@@ -770,6 +804,8 @@ const handleOpenPdf = () => {
             </div>
             <div className="col-md-3">
             <label className="form-label">Customer Name</label>
+            <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+            <div style={{width:"300px"}}>
             <Select
                 options={customerOptions}
                 value={customerOptions.find((opt) => opt.value === formData?.customerid) || null}
@@ -788,7 +824,18 @@ const handleOpenPdf = () => {
                 isClearable
                 isSearchable
             />
-              
+            </div>
+            <button onClick={ () => handleOpenModalCustomer(true)}
+                style={{
+                  padding: "4px 12px",
+                  fontSize: "16px",
+                  cursor: "pointer",
+                  height: "38px", // matches typical react-select height
+                }}
+              >
+                +
+              </button>
+            </div>
             </div>
           </div>
           <div className="row mb-3">
@@ -935,10 +982,15 @@ const handleOpenPdf = () => {
             <td>{p.rowno ?? idx + 1}</td>
             <td>
                 <Select
-            options={itemOptions}
+            options={enhancedItemOptions}
              value={itemOptions.find(opt => Number(opt.value) === Number(p.itemid)) || null}
             onChange={(selected) => {
               if (!selected) return; 
+              if (selected.value === "__add_new__") {
+              // 🔹 Handle Add New Item action
+              setShowModalItem(true); 
+              return;
+            }
               // Only set the essential item data
                 handleInvDetailsChange(idx, "itemid", selected.value);
                 handleInvDetailsChange(idx, "uomid", selected.selling_uom);
@@ -954,8 +1006,8 @@ const handleOpenPdf = () => {
             isClearable
             isSearchable
             className="w-400" 
-          />
-
+            styles={customStyles}
+          /> 
             </td>
             <td>
             <input type="text" className="form-control"  value={p.productcode} onChange={(e) => handleInvDetailsChange(idx, "productcode", e.target.value)} style={{width:"200px"}} disabled />
@@ -1356,6 +1408,57 @@ const handleOpenPdf = () => {
           setShowModal(false);
         }}
       />
+     {/* ✅ customer Modal */}
+      {showModalCustomer && (
+        <>
+          <div className="modal fade show d-block" tabIndex="-1" role="dialog">
+            <div className="modal-dialog modal-fullscreen" role="document">
+              <div className="modal-content">
+                <div className="modal-header">
+                  <h5 className="modal-title">New Customer</h5>
+                  <button type="button" className="btn-close" onClick={() => setShowModalCustomer(false)}></button>
+                </div>
+                <div className="modal-body">
+                  <CustomerForm
+                    onSaved={() => {
+                      fetchCustomer();
+                      setShowModalCustomer(false);
+                    }}
+                    onClose={() => setShowModalCustomer(false)}
+                  />
+                </div>
+              </div>
+            </div>
+          </div>
+          <div className="modal-backdrop fade show" onClick={() => setShowModalCustomer(false)}></div>
+        </>
+      )}
+
+    {showModalItem && (
+        <>
+          <div className="modal fade show d-block" tabIndex="-1" role="dialog">
+            <div className="modal-dialog modal-xl" role="document">
+              <div className="modal-content">
+                <div className="modal-header">
+                  <h5 className="modal-title">New Item</h5>
+                  <button type="button" className="btn-close" onClick={() => setShowModalItem(false)}></button>
+                </div>
+                <div className="modal-body">
+                  <ItemsForm
+                    onSaved={() => {
+                      fetchItems();
+                      setShowModalItem(false);
+                    }}
+                    onClose={() => setShowModalItem(false)}
+                  />
+                </div>
+              </div>
+            </div>
+          </div>
+          <div className="modal-backdrop fade show" onClick={() => setShowModalItem(false)}></div>
+        </>
+      )}       
+
     </div>
   );
 }

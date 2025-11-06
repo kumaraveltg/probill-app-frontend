@@ -137,3 +137,16 @@ label.required::after {
 .w-200 { width: 200px; }
 .w-300 {width: 300px;}
 .w-400 {width: 400px;}
+
+
+.modal {
+  z-index: 1050 !important;
+}
+.modal-backdrop {
+  z-index: 1040 !important;
+}
+
+.custom-col2-5 {
+  flex: 0 0 18.75%; /* (2.25 / 12) * 100 */
+  max-width: 18.75%;
+}

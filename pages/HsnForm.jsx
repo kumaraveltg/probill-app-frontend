@@ -4,9 +4,8 @@ import DataContext , { useData } from "../context/DataContext";
 import { API_URL } from "../components/Config";
 import SearchModal from "../components/SearchModal"; 
 import { AuthContext } from "../context/AuthContext";
-import Select from "react-select";
-import DatePicker from "react-datepicker";
-import "react-datepicker/dist/react-datepicker.css";
+import Select from "react-select";  
+import TaxMasterForm from "./TaxMasterForm";
 
 function HsnForm({ onClose,onSaved, hsnObject,setHsnObject,navigateToList,handleDelete }) {
   const { fetchHsn, hsn,companyname,companyid } = useContext(DataContext);
@@ -34,6 +33,7 @@ function HsnForm({ onClose,onSaved, hsnObject,setHsnObject,navigateToList,handle
   const{taxmaster,fetchTaxMaster} = useData();
   const [selectedTax, setSelectedTax] = useState('');
   const [selectedDate, setSelectedDate] = useState(new Date());
+  const [showModalTax,setShowModalTax]= useState(false);
 
  
   const fallbackParams = JSON.parse(localStorage.getItem("globalParams") || "{}");
@@ -52,7 +52,9 @@ function HsnForm({ onClose,onSaved, hsnObject,setHsnObject,navigateToList,handle
       }, [taxmaster]);
 
  
-
+   const handleOpenModal = ()=>{
+    setShowModalTax(true);
+   }
 
 
   const resetForm = () => { 
@@ -255,6 +257,7 @@ function HsnForm({ onClose,onSaved, hsnObject,setHsnObject,navigateToList,handle
         <div className="row mb-3">
             <div className="col-md-3">
             <label className="form-label">Tax Name</label>
+            <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
             <Select
             options={taxOptions}
             value={taxOptions.find(opt => opt.value === formData?.taxname) || null}
@@ -267,6 +270,17 @@ function HsnForm({ onClose,onSaved, hsnObject,setHsnObject,navigateToList,handle
             isClearable
             isSearchable    
             />  
+            <button onClick={ () => handleOpenModal(true)}
+                style={{
+                  padding: "4px 12px",
+                  fontSize: "16px",
+                  cursor: "pointer",
+                  height: "38px", // matches typical react-select height
+                }}
+              >
+                +
+              </button> 
+            </div>
           </div> 
           <div className="col-md-3">
             <label className="form-label">TaxRate</label>
@@ -285,9 +299,7 @@ function HsnForm({ onClose,onSaved, hsnObject,setHsnObject,navigateToList,handle
                    checked={formData.active} onChange={handleChange}   />
             <label className="form-check-label">Active</label>
           </div>
-         </div>
-          
-
+         </div> 
           <div>
             <button type="submit" className="btn btn-primary me-2" disabled={loading}>
               <FaSave className="me-1" /> {loading ? "Saving.." :isEdit? "Update" : "Save" }
@@ -311,6 +323,31 @@ function HsnForm({ onClose,onSaved, hsnObject,setHsnObject,navigateToList,handle
         setShowModal(false);
         }}
     />
+      {/* ✅ State Modal */}
+      {showModalTax && (
+        <>
+          <div className="modal fade show d-block" tabIndex="-1" role="dialog">
+            <div className="modal-dialog modal-lg" role="document">
+              <div className="modal-content">
+                <div className="modal-header">
+                  <h5 className="modal-title">Add New TAX</h5>
+                  <button type="button" className="btn-close" onClick={() => setShowModalTax(false)}></button>
+                </div>
+                <div className="modal-body">
+                  <TaxMasterForm
+                    onSaved={() => {
+                      fetchTaxMaster();
+                      setShowModalTax(false);
+                    }}
+                    onClose={() => setShowModalTax(false)}
+                  />
+                </div>
+              </div>
+            </div>
+          </div>
+          <div className="modal-backdrop fade show" onClick={() => setShowModalTax(false)}></div>
+        </>
+      )} 
         </div>
   );
 }

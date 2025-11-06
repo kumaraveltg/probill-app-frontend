@@ -25,7 +25,7 @@
 
   useEffect(() => {
     fetchCities(page * limit, limit);
-  }, [page, limit]);
+  }, [page, limit,total]);
 
   //New City Form
   const handleAddCity = () => {
@@ -37,7 +37,7 @@
     setCityObject(city);
     setShowForm(true);
   };
-  console.log("handleEditCity cityObject:", cityObject);
+ 
   
   const handleDeleteCity = async (cityId) => {
     if (window.confirm("Are you sure you want to delete this city?")) {
