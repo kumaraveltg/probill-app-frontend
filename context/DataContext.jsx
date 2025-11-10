@@ -24,6 +24,7 @@ export const DataProvider = ({ children }) => {
   const [currencies, setCurrencies] = useState([]); 
   const [invoice,setInvoice]= useState([]);
   const [receipts,setReceipts]= useState([]);
+  const [adminCompany,setAdminCompany]= useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const limit = 10;
@@ -354,7 +355,7 @@ const fetchCustomer = useCallback(async(skip=0,limit=500) => {
   }
 },[companyid,authFetch,accessToken])
 
- // fetch countries
+ // fetch currencies
   const fetchCurrencies = async (skip=0,limit=500) => {
     try {
       setLoading(true);
@@ -420,27 +421,38 @@ const fetchCustomer = useCallback(async(skip=0,limit=500) => {
       } 
     }, [companyid,authFetch,accessToken]);
 
+  const fetchAdminCompany = useCallback(async(skip=0,limit=500) => {    
+  try{
+    setLoading(true);
+    const res= await authFetch(`${API_URL}/company/getcompany/?skip=${skip}&limit=${limit}`,
+      { headers: {"Authorization": `Bearer ${accessToken}`}
+    } );
+    if(!res.ok) throw new Error(`HTTP Error ${res.status}`);
+    const data = await res.json();
+    console.log("Fetch Company Data:",data);
+    setAdminCompany(data.company_list||[]);
+    setTotal(data.total||0);
+  }
+  catch(err){
+    setError(err.message);
+
+  }
+  finally{
+    setLoading(false);
+  }
+},[ accessToken,authFetch])
 
  //✅ Initial data load - only when accessToken is available
   useEffect(() => {
     if (accessToken) {
       const fetchData = async () => {   
-        await fetchReceipts(0, 100); 
+        await fetchAdminCompany(0, 500); 
       }; 
       fetchData();
     }
   }, [accessToken ]);
 
- // ✅ Fetch UOMs when companyid becomes available
-  // useEffect(() => {
-  //   console.log("AuthContext companyid:", companyid);
-  //   if (companyid && accessToken) {
-  //     console.log("Fetching UOMs with companyid:", companyid);
-               
-  //         fetchTaxMaster();
-  //   }
-  // }, [companyid, accessToken,fetchTaxMaster ]);
-
+  
 
   return (
     <DataContext.Provider
@@ -460,7 +472,7 @@ const fetchCustomer = useCallback(async(skip=0,limit=500) => {
         total,
         companyid,busers,fetchUsers,userRole,fetchUserRole,finyr,fetchFinyr,taxmaster,fetchTaxMaster,
         items,fetchItems,test,hsn,fetchHsn,customer,fetchCustomer,currencies,fetchCurrencies,
-        invoice,fetchInvoices,receipts,fetchReceipts
+        invoice,fetchInvoices,receipts,fetchReceipts,adminCompany,fetchAdminCompany
       }}
     >
       {children}

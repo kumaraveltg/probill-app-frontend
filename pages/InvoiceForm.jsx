@@ -40,7 +40,7 @@ function InvoiceForm({ onClose, onSaved, invoiceObject, setInvoiceObject, naviga
     currencycode: "",
     currencyid: null,
     exrate: 1.0000, 
-    placeof_supply:"",
+    placeof_supply:"Intra",
     gstin: "",
     supplytype:"",
     remarks:"",
@@ -71,7 +71,17 @@ function InvoiceForm({ onClose, onSaved, invoiceObject, setInvoiceObject, naviga
   const itemOptions = useMemo(() => items.map(tm => ({ value  : tm.id, label: tm.productname, productcode: tm.productcode, selling_uom: tm.selling_uom,suom: tm.suom,taxmasterid: tm.taxmasterid,taxname:tm.taxname,taxrate:tm.taxrate ,selling_price:tm.selling_price})), [items]);
   const uomOptions = useMemo(() => uoms.map(tm => ({ value: tm.id, label: tm.uomcode})), [uoms]);
   const taxOptions = useMemo(() => (taxmaster || []).map(tm => ({ value: tm.id, label: tm.taxname,taxrate :tm.taxrate})), [taxmaster]);
+ 
+  const convertDate = (dateStr) => {
+      if (!dateStr) return "";
+      if (dateStr.includes("-")) return dateStr;
+      const [day, month, year] = dateStr.split("/");
+      return `${year}-${month}-${day}`;
+    };
+ 
+ 
   const discountOptions = [
+  { value: "NA", label:"NA"},
   { value: "Percentage", label: "Percentage" },
   { value: "Lumpsum", label: "Lumpsum" },
 ];
@@ -284,7 +294,7 @@ useEffect(() => {
       return;
     }
 
-    setIsEdit(true);
+    setIsEdit(true); 
 
     // ✅ 2. Load customer info from already-fetched list
     if (Array.isArray(customer) && customer.length > 0) {
@@ -315,9 +325,7 @@ useEffect(() => {
     setShowModalCustomer(true);
   };
 
-  const handleOpenModalItem = () => {
-    setShowModalItem(true);
-  };
+  
 
  
   // Generic change handler (handles checkboxes and text/select)
@@ -393,34 +401,36 @@ const handleInvDetailsChange = (index, field, value) => {
     } else if (row.discounttype === "Lumpsum") {
       row.afterdiscountamount =  disc;
     } else {
-      row.afterdiscountamount = amount;
+      row.afterdiscountamount = 0;
     }
 
     // 🧾 Apply tax breakup based on supply type
-    const taxRate = row.taxrate || 0;
-    const afterDiscAmt = (row.invoiceamount - row.afterdiscountamount)|| 0;
+    const invoiceAmt = Number(row.invoiceamount) || 0;
+    const afterDiscAmt = Number(row.afterdiscountamount) || 0;
+    const taxRate = Number(row.taxrate) || 0;
 
-    row.taxamount = (afterDiscAmt * taxRate) / 100;
+    const taxableAmt = invoiceAmt - afterDiscAmt;
+    row.taxamount = (taxableAmt * taxRate) / 100;
 
     if (formData.supplytype === "Inter") {
       row.igstper = taxRate;
       row.sgstper = 0;
       row.cgstper = 0;
-      row.gigstamount = (afterDiscAmt * row.igstper) / 100;
+      row.gigstamount = (taxableAmt * row.igstper) / 100;
       row.gsgstamount = 0;
       row.gcgstamount = 0;
     } else {
       row.sgstper = taxRate / 2;
       row.cgstper = taxRate / 2;
       row.igstper = 0;
-      row.gsgstamount = (afterDiscAmt * row.sgstper) / 100;
-      row.gcgstamount = (afterDiscAmt * row.cgstper) / 100;
+      row.gsgstamount = (taxableAmt * row.sgstper) / 100;
+      row.gcgstamount = (taxableAmt * row.cgstper) / 100;
       row.gigstamount = 0;
     }
 
     // 🧾 Calculate net amount
     row.netamount =
-      afterDiscAmt +
+      taxableAmt +
       (row.gsgstamount || 0) +
       (row.gcgstamount || 0) +
       (row.gigstamount || 0);
@@ -556,10 +566,10 @@ const calculateFooter = () => {
       invoicedate: formData.invoicedate,
       customerid: formData.customerid,
       referenceno: formData.referenceno || " ",
-      referencedate: formData.referencedate ,
+      referencedate: formData.referencedate ? formData.referencedate:null ,
       currencyid: formData.currencyid,
       exrate: formData.exrate,
-      supplytype: formData.supplytype,
+      supplytype: formData.supplytype||"Intra",
       remarks: formData.remarks || " ",
       grossamount: invfooter.grossamount || 0,
       sgstamount: invfooter.totsgstamt || 0,
@@ -771,7 +781,7 @@ const handleOpenPdf = () => {
     <div className="card w-100">
       {message && <div className="alert alert-danger mt-2">{message}</div>}
       <div className="d-flex justify-content-between align-items-center w-100"
-           style={{ backgroundColor: "#ebe6e6ff", border: "1px solid #ced4da", borderRadius: "5px" }}>
+           style={{ backgroundColor: "#ebe6e6ff", border: "1px solid #ced4da", borderRadius: "3px" }}>
         <h4 className="mb-0">{isEdit ? "Edit Invoice" : "New Invoice"}</h4>
         <div className="btn-toolbar gap-2" role="toolbar">
           <button type="button" className="btn btn-secondary" onClick={resetForm}><i className="bi bi-plus-lg"></i></button>
@@ -782,7 +792,7 @@ const handleOpenPdf = () => {
       </div>
 
       <form onSubmit={handleSubmit}>
-        <header className="card p-3 border border-secondary w-100 mt-2" style={{ backgroundColor: "#ebe6e6ff" }}>
+        <header className="card p-3 border border-secondary w-100 mt-1" style={{ backgroundColor: "#ebe6e6ff" }}>
           {/* <div className="row mb-3">
             <div className="col-md-3">
               <label className="form-label">Company Name</label>
@@ -793,7 +803,7 @@ const handleOpenPdf = () => {
               <input type="text" className="form-control" name="companyno" readOnly value={formData.companyno || "Loading..."} onChange={handleChange} style={{ width: "100px" }} />
             </div>  
           </div>  */}
-          <div className="row mb-3">
+          <div className="row mb-1">
              <div className="col-md-3">
               <label className="form-label">Invoice Date</label>
               <input type="date" className="form-control" name="invoicedate" value={formData.invoicedate}  onChange={handleChange} style={{ width: "150px" }} required />
@@ -825,7 +835,7 @@ const handleOpenPdf = () => {
                 isSearchable
             />
             </div>
-            <button onClick={ () => handleOpenModalCustomer(true)}
+            <button onClick={handleOpenModalCustomer}
                 style={{
                   padding: "4px 12px",
                   fontSize: "16px",
@@ -838,14 +848,14 @@ const handleOpenPdf = () => {
             </div>
             </div>
           </div>
-          <div className="row mb-3">
+          <div className="row mb-1">
             <div className="col-md-3">
               <label className="form-label">Reference No</label>
               <input type="text" className="form-control" name="referenceno" value={formData.referenceno}   onChange={handleChange} style={{ width: "150px" }} />
             </div>
             <div className="col-md-3">
               <label className="form-label">Ref.Date </label>
-              <input type="date" className="form-control" name="referencedate" value={formData.referencedate}   onChange={handleChange} style={{ width: "150px" }} />
+              <input type="date" className="form-control" name="referencedate" value={convertDate(formData.referencedate)}   onChange={handleChange} style={{ width: "150px" }} />
             </div>
             <div className="col-md-3">
             <label className="form-label">Currency Code</label>
@@ -873,7 +883,7 @@ const handleOpenPdf = () => {
             </div>
           </div>
 
-          <div className="row mb-3"> 
+          <div className="row mb-1"> 
             <div className="col-md-3">
             <label className="form-label">GSTIN</label>
             <input
@@ -900,35 +910,34 @@ const handleOpenPdf = () => {
             />
             </div>
              <div className="col-md-3">
-                 <label className="form-label">Supply Type</label>
+            <label className="form-label">Supply Type</label>
           <select
             className="form-select"
-            value={formData.supplytype}            
+            value={formData.supplytype||"Intra"}            
             onChange={(e) =>
               setFormData((prev) => ({
                 ...prev,
                 supplytype: e.target.value,
               }))
-            }
-            // disabled={formData.gstin && formData.gstin !== "NA"} // ✅ editable only if GSTIN is NA
+            } 
           >
-            <option value="">-- Select Supply Type --</option>
+            <option value="">Select Supply Type</option>
             <option value="Intra">Intra</option>
             <option value="Inter">Inter</option>
           </select>
            </div>       
           </div> 
-        <div className="row mb-3">
-           <div className="mb-9">
+        <div className="row mb-1">
+           <div className="col-md-6">
             <label className="form-label">Remarks</label>
             <textarea className="form-control" name="remarks"
-                   value={formData.remarks} onChange={handleChange} rows={4} style={{ width: "775px" }} />
+                   value={formData.remarks} onChange={handleChange} rows={4}   />
           </div>
             </div>
         </header>
 
     {/* ===== Invoice Details Tabs ===== */}
-    <ul className="nav nav-tabs mt-3" role="tablist">
+    <ul className="nav nav-tabs mt-1" role="tablist">
       <li className="nav-item" role="presentation">
         <button className={`nav-link ${activeTab === "invdetail" ? "active" : ""}`} type="button" style={{ backgroundColor: "#ebe6e6ff" }} onClick={() => setActiveTab("invdetail")}>Item Details</button>
       </li>
@@ -937,7 +946,7 @@ const handleOpenPdf = () => {
       </li>
     </ul>
 
-    <div className="tab-content mt-3"> 
+    <div className="tab-content mt-1"> 
 
     {activeTab === "invdetail" && (
     <div className="tab-pane fade show active p-2" style={{ backgroundColor: "#ebe6e6ff", border: "1px solid #ced4da", borderRadius: "1px" }}>
@@ -976,6 +985,7 @@ const handleOpenPdf = () => {
         </tr>
         </thead>
         <tbody>
+          
         {Array.isArray(invdetail) && invdetail.map((p, idx) => (
             <tr key={p.key}>
             <td><input type="checkbox" checked={p.selected || false} onChange={() => toggleSelect(idx)} /></td>
@@ -997,6 +1007,7 @@ const handleOpenPdf = () => {
                 handleInvDetailsChange(idx, "productcode", selected.productcode);
                 handleInvDetailsChange(idx, "taxheaderid", selected.taxmasterid);
                 handleInvDetailsChange(idx, "taxname", selected.taxname);
+                handleInvDetailsChange(idx, "taxrate", selected.taxrate);
                 
                 // This triggers ALL calculations (invoiceamount, tax, netamount, etc.)
                 handleInvDetailsChange(idx, "invoicerate", selected.selling_price);
@@ -1071,12 +1082,12 @@ const handleOpenPdf = () => {
             <td>
             <Select
                 options={discountOptions}
-                value={discountOptions.find(opt => opt.value === p.discounttype) || null}
+                value={discountOptions.find(opt => opt.value === p.discounttype) || ""}
                 onChange={(selected) => {
                   if (!selected) return;
 
                   // Update discount type in your state
-                  handleInvDetailsChange(idx, "discounttype", selected.value||"");
+                  handleInvDetailsChange(idx, "discounttype", selected.valueOf||"");
 
                   // Recalculate after discount amount
                   handleInvDetailsChange(idx, "discount_amt_per", p.discount_amt_per || 0);
@@ -1167,21 +1178,33 @@ const handleOpenPdf = () => {
                 handleInvDetailsChange(idx, 'netamount', floatValue || 0);
               }}
               style={{width:"110px"}}
+                          onKeyDown={(e) => {
+                if (e.key === "Tab" && idx === invdetail.length - 1) {
+                  e.preventDefault(); // stop the default tab behavior
+                  addInvdetailRow();     // add a new empty row
+                  setTimeout(() => {
+                    const next = document.querySelector(
+                      `input[name="itemid-${invdetail.length}"]`
+                    );
+                    next?.focus(); // optional: move focus to new row's first field
+                  }, 100);
+                }
+              }}
             />
             </td>
               </tr>
-              ))}
+              ))} 
         </tbody>
-                <tfoot className="table-secondary fw-bold">
+        <tfoot className="table-secondary fw-bold">
           <tr>
             <td colSpan="5" style={{ textAlign: "right" }}>Totals:</td>
             <td>{totals.totalQty.toFixed(2)}</td>
             <td></td>
             <td>{totals.totalInvoiceAmt.toFixed(2)}</td>
             <td></td>
-            <td>{totals.totalDiscount.toFixed(2)}</td>
-            <td>{totals.totalafterDiscAmt.toFixed(2)}</td>
             <td></td>
+            <td>{totals.totalDiscount.toFixed(2)}</td>
+            <td> </td>
             <td></td>
             <td>{totals.totalTax.toFixed(2)}</td> 
             <td hidden></td>   
@@ -1343,8 +1366,6 @@ const handleOpenPdf = () => {
           />
         </div>
       </div>
-
- 
     </div>
          )}
 
@@ -1409,17 +1430,18 @@ const handleOpenPdf = () => {
         }}
       />
      {/* ✅ customer Modal */}
-      {showModalCustomer && (
+      {showModalCustomer &&  (
         <>
-          <div className="modal fade show d-block" tabIndex="-1" role="dialog">
+          <div className="modal fade show d-block" tabIndex="-1" role="dialog" >
             <div className="modal-dialog modal-fullscreen" role="document">
               <div className="modal-content">
                 <div className="modal-header">
-                  <h5 className="modal-title">New Customer</h5>
+                  <h5 className="modal-title">{formData?.id?"Edit Customer":"New Customer"}</h5>
                   <button type="button" className="btn-close" onClick={() => setShowModalCustomer(false)}></button>
                 </div>
                 <div className="modal-body">
                   <CustomerForm
+                    formData = {formData}
                     onSaved={() => {
                       fetchCustomer();
                       setShowModalCustomer(false);

@@ -1,25 +1,28 @@
-import { useState, useEffect, useContext } from "react";
+import { useState, useEffect, useContext,useMemo } from "react";
 import { FaSave, FaTimes } from "react-icons/fa";
-import DataContext from "../context/DataContext";
+import DataContext, { useData } from "../context/DataContext";
 import { API_URL } from "../components/Config";
 import SearchModal from "../components/SearchModal"; 
 import { AuthContext } from "../context/AuthContext";
+import { Multiselect } from "multiselect-react-dropdown";
+
 
  function UsersForm( {onSaved, usersObject, setUsersObject, navigateToList, handleDelete, onClose} ) {
- const {fetchUsers,busers,companyid,companyname,companyno } = useContext(DataContext); 
- const { accessToken,authFetch } = useContext(AuthContext);
- const[ selectedUsers,setSelectedUsers]= useState(usersObject||null);
- const [ formData,setFormData]= useState(
+ const { acessToken, authFetch, username: ctxUsername, companyid: defaultcompanyid, companyno: defaultCompanyno } = useContext(AuthContext);
+ const {companies,fetchCompanies,userRole,fetchUserRole}= useData();
+ const[ selectedUsers,setSelectedUsers]= useState(usersObject||null);  
+  const [ formData,setFormData]= useState(
     {
         id: null,
-        companyid: companyid?? null,
-        companyname: companyname?? "",
-        companyno: companyno?? "",
+        companyid: defaultcompanyid||null,
+        companyname:"",
+        companyno: defaultCompanyno?? "",
         username: "",
         password:"",
         firstname: "",
         emailid: "",
-        userroleids: null,
+        usertype:"",
+        userroleids:[],
         active: true,
         createdby: "",
         modifiedby: ""
@@ -29,48 +32,64 @@ import { AuthContext } from "../context/AuthContext";
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState("");
 
-  const resetForm = () => {
-    let defaultCompanyName = "Default Company";
-    let defaultUsername= "";
-    let defaultcompanyno="";
+   
+  const fallbackParams = JSON.parse(localStorage.getItem("globalParams") || "{}");
+  const uname = ctxUsername || fallbackParams.username || "admin";
+  const cid = defaultcompanyid || fallbackParams.companyid || companyid;
+  const cno = defaultCompanyno || fallbackParams.companyno || companyno;
+  const roleOptions = useMemo(() => (userRole || []).map(c => ({ value: c.id, label: c.rolename,  })), [userRole]);
 
-     const fallbackParams = JSON.parse(localStorage.getItem("globalParams") || "{}");
+ useEffect(() => {
+     if (!companies.length) {
+       fetchCompanies();
+       fetchUserRole();
+     }
+   }, [ fetchCompanies,fetchUserRole]);
 
-      const cid = companyid ?? fallbackParams.companyid;
-      const uname = fallbackParams.username;
-      const cno = fallbackParams.companyno;
-
-    
-    if (Array.isArray(busers)) {
-      const match = busers.find(
-        (c) => c.companyid === (companyid ?? companyid)
-      );
-      console.log("Matched company:", match);
-      if (match) {
-        defaultCompanyName = match.companyname;
-        defaultUsername  = match.username;
-        defaultcompanyno= match.companyno;
-      }else {
-    defaultCompanyName = fallbackParams.companyname ?? defaultCompanyName;
-    defaultUsername = uname ?? defaultUsername;
-    defaultcompanyno = cno ?? defaultcompanyno;
+  useEffect(() => {
+    if (  Array.isArray(companies) && companies.length > 0) {
+      const defaultCompany = companies.find(c => c.companyid === defaultcompanyid);
+      if (defaultCompany) {
+        setFormData(prev => ({
+          ...prev,
+          companyname: defaultCompany.companyname,
+          companyno: defaultCompany.companyno,
+          companyid: defaultCompany.companyid
+        }));
+       
+        console.log("Default company set:", defaultCompany.companyname);
+      }
     }
-  }
+  }, [companies, defaultcompanyid ]);
 
+  const handleRoleChange = (selectedList) => {
+    setFormData((prev) => ({
+      ...prev,
+      userroleids: selectedList.map((item) => item.value),
+    }));
+  };
+
+  const resetForm = () => { 
+    if (!Array.isArray(companies)) {
+    console.warn("companies is undefined or not an array:", companies);
+    return;  
+    }
+    const defaultCompany = companies.find(c => c.companyid === defaultcompanyid) || { companyname: "", companyno: "" };
     setFormData((prev) => ({
       ...prev,
       id: null,
-        companyid: companyid?? null,
-        companyname: defaultCompanyName,
-        companyno: defaultcompanyno,
+        companyid: cid?? null,
+        companyname: defaultCompany.companyname,
+        companyno: cno,
         username: "",
         password: "",
         firstname: "",
         emailid: "",
-        userroleids: null,
+        userroleids: [],
+        usertype:"",
         active: true,
-        createdby:  defaultUsername,
-        modifiedby: defaultUsername
+        createdby:  uname,
+        modifiedby: uname
     }));
     setIsEdit(false);
     setMessage("");
@@ -126,22 +145,23 @@ const handleSubmit = async (e) => {
         password:   formData.password || "123456",
         firstname: formData.firstname,
         emailid: formData.emailid,
-        userroleids: [1],
+        userroleids: formData.userroleids,
+        usertype: formData.usertype||"USERS",
         active: formData.active,
-        createdby: formData.createdby || "admin",
-        modifiedby: formData.modifiedby || "admin"
+        createdby: uname,
+        modifiedby: uname
       };
 
       const method = "POST"
       const endpoint = isEdit ? `${API_URL}/users/updateuser/${formData.id}` : `${API_URL}/users/users/`;
 
-      console.log("Access Token:", accessToken);
+      console.log("Access Token:", acessToken);
       console.log("Sending payload:", payload);
       console.log("Endpoint:", endpoint);
 
       const res = await authFetch(endpoint, {
         method,
-        headers: {"Authorization": `Bearer ${accessToken}`  ,"Content-Type": "application/json" },
+        headers: {"Authorization": `Bearer ${acessToken}`  ,"Content-Type": "application/json" },
         body: JSON.stringify(payload)
       });
 
@@ -196,7 +216,7 @@ const columns = [
   return (
     <div className="card w-100">
       <div className="d-flex justify-content-between align-items-center w-100"
-           style={{ backgroundColor: "#ebe6e6ff", border: "1px solid #ced4da", borderRadius: "5px" }}>
+           style={{ backgroundColor: "#ebe6e6ff", border: "1px solid #ced4da", borderRadius: "3px" }}>
         <h4 className="mb-0">{isEdit ? "Edit UOM" : "New UOM"}</h4>
          <div className="btn-toolbar gap-2" role="toolbar">
           <button type="button" className="btn btn-secondary" onClick={resetForm}>
@@ -217,10 +237,10 @@ const columns = [
         </div> 
       </div>
 
-      <div className="card p-3 border border-secondary w-100" style={{ backgroundColor: "#ebe6e6ff" }}>
+      <div className="card p-1 border border-secondary w-100" style={{ backgroundColor: "#ebe6e6ff" }}>
         {message && <div className="alert alert-danger">{message}</div>}
         <form onSubmit={handleSubmit}>
-          <div className="row mb-3">
+         {/* <div className="row mb-1">
           <div className="col-md-6">
             <label className="form-label">Company Name*</label>
             <input type="text" className="form-control" name="companyname"
@@ -231,9 +251,9 @@ const columns = [
             <input type="text" className="form-control" name="companyno"
                    value={formData.companyno || companyno || ""} readOnly style={{ width: "200px" }} />
           </div>
-            </div>
-          <div className="row mb-3">
-            <div className="col-md-4">
+            </div>*/}
+          <div className="row mb-1">
+            <div className="col-md-3">
                 <label className="form-label">User Name *</label>
                 <input 
                     type="text" 
@@ -250,12 +270,31 @@ const columns = [
                     type="password" 
                     className="form-control" 
                     name="password"
-                    value={formData.password || ""} 
+                    value={formData.password || "123456"} 
                     onChange={handleChange} 
+                    readOnly
                 />
             </div>
-
-            <div className="col-md-6">
+                <div className="col-md-3">
+            <label className="form-label">User Type</label>
+          <select
+            className="form-select"
+            value={formData.usertype||"USERS"}            
+            onChange={(e) =>
+              setFormData((prev) => ({
+                ...prev,
+                usertype: e.target.value,
+              }))
+            } 
+            disabled
+          >
+            <option value="">Select User Type</option>
+            <option value="USERS">USERS</option>
+            <option value="ADMIN">ADMIN</option>
+            
+          </select>
+           </div>
+            <div className="col-md-4">
                 <label className="form-label">First Name *</label>
                 <input 
                     type="text" 
@@ -268,7 +307,7 @@ const columns = [
           </div>
 
             {/* Second Row */}
-            <div className="row mb-3">
+            <div className="row mb-1">
             <div className="col-md-3">
                 <label className="form-label">Email Id</label>
                 <input 
@@ -279,17 +318,24 @@ const columns = [
                 value={formData.emailid} 
                 onChange={handleChange} 
                 />
-            </div>
-
+            </div> 
             <div className="col-md-3">
-                <label className="form-label">User Role</label>
-                <input 
-                type="text" 
-                className="form-control" 
-                name="userroleids"
-                value={formData.userroleids?.[0] ?? ""}
-                onChange={handleChange} 
-                />
+              <label className="form-label fw-bold">Select Roles</label>
+              <Multiselect
+                options={roleOptions}
+                displayValue="label"
+                selectedValues={roleOptions.filter((r) =>
+                  formData.userroleids.includes(r.value)
+                )}
+                onSelect={handleRoleChange}
+                onRemove={handleRoleChange}
+                showCheckbox
+                placeholder="Choose roles"
+                style={{
+                  multiselectContainer: { color: "black" },
+                  chips: { background: "#0d6efd" }, // Bootstrap blue
+                }}
+              />
             </div>
             
             </div>   
@@ -314,7 +360,7 @@ const columns = [
       <SearchModal
       show={showModal}
       onClose={()=>setShowModal(false)}
-      apiUrl={`${API_URL}/users/search/${companyid}`}
+      apiUrl={`${API_URL}/users/search/${defaultcompanyid}`}
       columns={columns}
       searchFields={searchFields}
         onSelect={(users) => {

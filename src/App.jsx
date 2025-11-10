@@ -21,18 +21,33 @@ import Test from "../pages/Test.jsx";
 import Hsn from "../pages/Hsn.jsx";
 import Customer from "../pages/Customer.jsx";
 import Invoice from "../pages/Invoice.jsx";
-import Receipts from "../pages/Receipts.jsx";
+import Receipts from "../pages/Receipts.jsx";  
+import AdminRoutes from "../components/Index.jsx" 
+
+
+
 
 // ✅ Protected Route
 const ProtectedRoute = ({ children }) => {
-  const { accessToken } = useContext(AuthContext);
+  const { accessToken, usertype } = useContext(AuthContext);
 
   if (!accessToken) {
     return <Navigate to="/login" replace />;
   }
 
+  // 👇 If ADMIN tries to access user routes, send them to admin portal
+  if (usertype === "ADMIN" && window.location.pathname.startsWith("/admin") === false) {
+    return <Navigate to="/admin" replace />;
+  }
+
+  // 👇 If USER tries to access admin routes, send them back to user dashboard
+  if (usertype === "USERS" && window.location.pathname.startsWith("/admin")) {
+    return <Navigate to="/" replace />;
+  }
+
   return children;
 };
+
 
 function App() {
   useSessionTimeout();
@@ -42,7 +57,7 @@ function App() {
       <AuthProvider>
         <DataProvider>
           <Routes>
-            {/* 🔓 Public Route */}
+            {/*  Public Route */}
             <Route path="/login" element={<Login />} />
 
             {/* 🔒 Protected Routes */}
@@ -70,9 +85,19 @@ function App() {
               <Route path="hsn" element={<Hsn />} />
               <Route path="customer" element={<Customer />} />
               <Route path="invoice" element={<Invoice />} />
-              <Route path="receipts" element={<Receipts />} />
+              <Route path="receipts" element={<Receipts />} /> 
+              
             </Route>
 
+             
+            <Route
+              path="/admin/*"
+              element={
+                <ProtectedRoute>
+                  <AdminRoutes />
+                </ProtectedRoute>
+              }
+            /> 
             {/* 🧭 Catch-all redirect */}
             <Route path="*" element={<Navigate to="/login" replace />} />
           </Routes>

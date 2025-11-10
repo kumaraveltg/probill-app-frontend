@@ -296,12 +296,12 @@ const fetchReceiptDetails = useCallback(async (receiptheaderid) => {
  
   // When receiptamount/tds/commission change, recalc netamount
   useEffect(() => {
-    const ra = parseFloat(formData.greceiptamount || 0);
-    const tds = parseFloat(formData.tdsamount || 0);
-    const comm = parseFloat(formData.commissionamount || 0);
+    const ra = parseFloat(gridData.greceiptamount || 0);
+    const tds = parseFloat(gridData.tdsamount || 0);
+    const comm = parseFloat(gridData.commissionamount || 0);
     const net = ra + tds + comm;
     setFormData(prev => ({ ...prev, netamount: parseFloat(net.toFixed(2)) }));
-  }, [formData.greceiptamount, formData.tdsamount, formData.commissionamount]);
+  }, [gridData.greceiptamount, gridData.tdsamount, gridData.commissionamount]);
 
   const handleChange = (e) => {
     const { name, type, value } = e.target;
@@ -501,7 +501,7 @@ const fetchReceiptDetails = useCallback(async (receiptheaderid) => {
   return (
     <div className="card w-100">
       {message && <div className="alert alert-danger mt-2">{message}</div>}
-      <div className="d-flex justify-content-between align-items-center w-100" style={{ backgroundColor: "#ebe6e6ff", border: "1px solid #ced4da", borderRadius: "5px" }}>
+      <div className="d-flex justify-content-between align-items-center w-100" style={{ backgroundColor: "#ebe6e6ff", border: "1px solid #ced4da", borderRadius: "3px" }}>
         <h4 className="mb-0">{formData.id ? 'Edit Receipt' : 'New Receipt'}</h4>
         <div className="btn-toolbar gap-2" role="toolbar">
           <button type="button" className="btn btn-secondary" onClick={resetForm}><i className="bi bi-plus-lg"></i></button>
@@ -511,8 +511,8 @@ const fetchReceiptDetails = useCallback(async (receiptheaderid) => {
         </div>
       </div>
 
-      <form onSubmit={handleSubmit} className="p-3">
-         <header className="card p-3 border border-secondary w-100 mt-2" style={{ backgroundColor: "#ebe6e6ff" }}>
+      <form onSubmit={handleSubmit}  >
+         <header className="card p-1 border border-secondary w-100 mt-1" style={{ backgroundColor: "#ebe6e6ff" }}>
            {/*<div className="row mb-3">
             <div className="col-md-3">
               <label className="form-label">Company Name</label>
@@ -523,7 +523,7 @@ const fetchReceiptDetails = useCallback(async (receiptheaderid) => {
               <input type="text" className="form-control" name="companyno" readOnly value={formData.companyno || "Loading..."} onChange={handleChange} style={{ width: "100px" }} />
             </div>  
           </div>  */}
-          <div className="row mb-3">
+          <div className="row mb-1">
              <div className="col-md-3">
               <label className="form-label">Receipt Date</label>
               <input type="date" className="form-control" name="receiptdate" value={convertDate(formData.receiptdate)}  onChange={handleChange} style={{ width: "150px" }} required />
@@ -567,7 +567,7 @@ const fetchReceiptDetails = useCallback(async (receiptheaderid) => {
             /> 
             </div> 
           </div>
-            <div className="row mb-3">
+            <div className="row mb-1">
             <div className="col-md-3" >
               <label className="form-label">Receipt Amount</label>               
               <NumericFormat  value={ formData.receiptamount||"" }
@@ -620,7 +620,7 @@ const fetchReceiptDetails = useCallback(async (receiptheaderid) => {
                   required/>
             </div>
           </div> 
-          <div className="row mb-3">
+          <div className="row mb-1">
             <div className="col-md-3">
               <label className="form-label">Transaction No</label>
               <input type="text" className="form-control" name="transactionno" value={formData.transactionno}   onChange={handleChange} style={{ width: "150px" }} />
@@ -638,7 +638,7 @@ const fetchReceiptDetails = useCallback(async (receiptheaderid) => {
               <input type="date" className="form-control" name="cheqedate" value={convertDate(formData.cheqedate)}   onChange={handleChange} style={{ width: "150px" }} />
             </div>    
           </div> 
-        <div className="row mb-3">
+        <div className="row mb-1">
           <div className="mb-9">
             <label className="form-label">Remarks</label>
             <textarea className="form-control" name="remarks"
@@ -646,7 +646,7 @@ const fetchReceiptDetails = useCallback(async (receiptheaderid) => {
           </div>
           </div>
         </header> 
-        <ul className="nav nav-tabs mt-3" role="tablist">
+        <ul className="nav nav-tabs mt-1" role="tablist">
        <li className="nav-item">
             <button 
               type="button"
@@ -666,7 +666,7 @@ const fetchReceiptDetails = useCallback(async (receiptheaderid) => {
           </li> 
           </ul>
         {activeTab === "gridData" && (
-          <div className="tab-pane fade show active p-2" style={{ backgroundColor: "#ebe6e6ff", border: "1px solid #ced4da", borderRadius: "1px" }}>
+          <div className="tab-pane fade show active p-1" style={{ backgroundColor: "#ebe6e6ff", border: "1px solid #ced4da", borderRadius: "1px" }}>
         <div className="d-flex justify-content-between align-items-center mb-1">
         <div className="d-flex gap-2">
             <button type="button" className="btn btn-secondary" onClick={handleAddReceipts}><i className="bi bi-plus-lg"></i></button>

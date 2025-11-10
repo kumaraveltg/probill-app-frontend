@@ -14,6 +14,8 @@ export const AuthProvider = ({ children }) => {
   const [companyid, setCompanyid] = useState(localStorage.getItem("companyid") || null);
   const [companycode, setCompanycode] = useState(localStorage.getItem("companycode") || null);
   const [companyname, setCompanyname] = useState(localStorage.getItem("companyname") || null);
+  const [usertype, setUsertype] = useState(localStorage.getItem("usertype") || null);
+  const [firstname, setFirstname] = useState(localStorage.getItem("firstname") || null);
 
   // --- TOKEN HELPERS ---
   const saveAccessToken = (token) => {
@@ -68,6 +70,8 @@ export const AuthProvider = ({ children }) => {
       setCompanyid(params.companyid);
       setCompanyno(params.companyno);
       setCompanyname(params.companyname);
+      setUsertype(params.usertype);
+      setFirstname(params.firstname);
 
       // Persist
       localStorage.setItem("username", params.username);
@@ -75,6 +79,8 @@ export const AuthProvider = ({ children }) => {
       localStorage.setItem("companyid", params.companyid);
       localStorage.setItem("companyno", params.companyno);
       localStorage.setItem("companyname", params.companyname);
+      localStorage.setItem("usetype",params.usertype);
+      localStorage.setItem("firstname",params.firstname)
 
       console.log("Global params loaded:", params);
       return params;
@@ -92,6 +98,8 @@ export const AuthProvider = ({ children }) => {
     setCompanyid(null);
     setCompanycode(null);
     setCompanyname(null);
+    setFirstname(null);
+    setUsertype(null);
 
     localStorage.clear();
     window.location.href = "/login";
@@ -142,7 +150,9 @@ export const AuthProvider = ({ children }) => {
     if (companyno) localStorage.setItem("companyno", companyno);
     if (companycode) localStorage.setItem("companycode", companycode);
     if (companyname) localStorage.setItem("companyname", companyname);
-  }, [accessToken, refreshToken, username, companyid, companyno, companycode, companyname]);
+    if (usertype) localStorage.setItem("usertype", usertype);
+    if (firstname) localStorage.setItem("firstname", firstname);
+  }, [accessToken, refreshToken, username, companyid, companyno, companycode, companyname,firstname,usertype]);
 
   
   return (
@@ -166,6 +176,9 @@ export const AuthProvider = ({ children }) => {
         setCompanyid,
         setCompanycode,
         setCompanyname,
+        usertype,
+        setUsertype,
+        firstname,setFirstname
       }}
     >
       {children}
