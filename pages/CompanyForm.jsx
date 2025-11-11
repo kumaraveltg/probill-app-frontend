@@ -11,7 +11,7 @@ import CurrencyForm from '../pages/CurrencyForm'
 
 
 function CompanyForm({ onClose,onSaved, companyObject,navigateToList }) {
-  const {  currencies,fetchCurrencies} = useContext(DataContext); 
+  const {  currencies,fetchCurrencies,license,fetchLicense} = useContext(DataContext); 
   const {username:ctxUsername,authFetch} = useContext(AuthContext)
   const fallbackParams = JSON.parse(localStorage.getItem("globalParams") || "{}");
   const uname = ctxUsername || fallbackParams.username || "admin";
@@ -26,19 +26,32 @@ function CompanyForm({ onClose,onSaved, companyObject,navigateToList }) {
     emailid:"",
     contactperson:"",
     currency:null,
-    currencycode: "",
+    currencycode: "", 
     active: true,
     createdby: "admin",
     modifiedby: uname
-  });
+  },
+); 
   const [showModal, setShowModal] = useState(false);
   const [isEdit, setIsEdit] = useState(false);
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState(""); 
   const [showCurrencyModal,setShowCurrencyModal]= useState(false);
+  const [licenseData,setLicenseData] = useState({
+    id: null, 
+    companyid:null,
+    companyno: "",
+    planname: "",     
+    planperiod:"",  
+    licensestatus:"Pending",
+    active: true,
+    createdby: "admin",
+    modifiedby: uname
+  })
 
   useEffect(() => {
-    fetchCurrencies();
+    fetchCurrencies(); 
+    fetchLicense();
   },[ ])
 
     const currecnySelection = useMemo(() =>{
@@ -51,7 +64,22 @@ function CompanyForm({ onClose,onSaved, companyObject,navigateToList }) {
             }
         ) )},[currencies]
     );
-  
+   
+    const licenseOptions = useMemo(() => {
+      if(!license|| !Array.isArray(license))
+        return [];
+      return license.map( c => ({
+          value: c.id,
+          label: c.planname,
+          planperiod:c.planperiod,
+          companyid: c.companyid,
+        })
+      )
+    },[license]
+    )
+
+    console.log("selected Licenseoption",licenseOptions);
+
  const handleOpenModal= () => {
   setShowCurrencyModal(true);
  }
@@ -64,6 +92,13 @@ function CompanyForm({ onClose,onSaved, companyObject,navigateToList }) {
       c => c.value === Number(companyObject.currency)
     );
   }
+  let selectedlicense = null
+  if(licenseData && licenseOptions.length> 0){
+    selectedlicense = licenseOptions.find(
+      c => c.label === licenseData.planname && c.companyid === companyObject.id
+    )
+  }
+   
 
   setFormData({
     id: companyObject?.id || null,
@@ -77,6 +112,8 @@ function CompanyForm({ onClose,onSaved, companyObject,navigateToList }) {
     contactperson: companyObject?.contactperson || "",
     currency: selectedCurrency?.value || null,
     currencycode: selectedCurrency?.label || "INR",
+    planname: selectedlicense?.label || licenseData?.planname || "",
+    planperiod: selectedlicense?.planperiod || licenseData?.planperiod || "",
     active: companyObject?.active ?? true,
     createdby: companyObject?.createdby || "admin",
     modifiedby: uname,
@@ -90,115 +127,161 @@ function CompanyForm({ onClose,onSaved, companyObject,navigateToList }) {
   // Populate form for edit or new mode
   useEffect(() => {
   if (companyObject && companyObject.id) {
-    // Edit mode
-    const selectedCurrency= currecnySelection.find(
-            c => c.value === Number(companyObject.currency)
-        )
-    setFormData({ ...companyObject,
-        currency:selectedCurrency?.value || null,
-        currencycode:selectedCurrency?.label || "",
-     });
+    // 🔹 Match currency
+    const selectedCurrency = currecnySelection.find(
+      c => c.value === Number(companyObject.currency)
+    );
+
+    // 🔹 Match license
+    const selectedLicense = licenseOptions.find(
+      c =>
+        c.label === companyObject.planname && // ✅ use companyObject.planname instead
+        c.companyid === companyObject.id
+    );
+
+    // 🔹 Update form only when companyObject exists
+    setFormData({
+      ...companyObject,
+      currency: selectedCurrency?.value || null,
+      currencycode: selectedCurrency?.label || "",
+      planname: selectedLicense?.label || companyObject?.planname || "",
+      planperiod: selectedLicense?.planperiod || companyObject?.planperiod || "",
+    });
+
     setIsEdit(true);
   } else {
-    // New mode default Company name should be visible
+    // New mode
     resetForm();
-    
   }
-}, [companyObject,currecnySelection]);
+}, [companyObject, currecnySelection, licenseOptions]);
 
  
   const handleChange = (e) => {
-    const { name, value, type, checked } = e.target;
-    setFormData(prev => ({
-      ...prev,
-      [name]: type === "checkbox" ? checked : value
-    }));
-    if (name === "emailid") {
+  const { name, value, type, checked } = e.target;
+  setFormData(prev => ({
+    ...prev,
+    [name]: type === "checkbox" ? checked : value
+  }));
+
+  // Simple live email validation
+  if (name === "emailid") {
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    setMessage(emailRegex.test(value) || value === "" ? "" : "Email Format is Wrong");
+    setMessage(!value || emailRegex.test(value) ? "" : "Email format is wrong");
   }
-    
-  };
+};
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    setLoading(true);
-    setMessage("");
+const handlePayNow= async(e)=>{
+  setLoading(false);
+}
 
-    if (!formData.companycode || !formData.companyname) {
-      setMessage("Please fill in all required fields.");
-      setLoading(false);
-      return;
+const handleSubmit = async (e) => {
+  e.preventDefault();
+  setLoading(true);
+  setMessage(""); // clear old message
+
+  try {
+    // 🔹 Basic validation
+    if (!formData.companycode || !formData.companyname || !licenseData.planname) {
+      throw new Error("Please fill in all required fields.");
     }
-   if (formData.emailid) {
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(formData.emailid)) {
-      setMessage("Invalid email format");
-      setLoading(false)
-      return; // stop submission
+
+    // 🔹 Email validation
+    if (formData.emailid) {
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!emailRegex.test(formData.emailid)) {
+        throw new Error("Invalid email format.");
+      }
     }
+
+    // 🔹 Prepare company payload
+    const companyPayload = {
+      companycode: formData.companycode,
+      companyname: formData.companyname,
+      companyno: formData.companyno,
+      adress: formData.adress,
+      gstno: formData.gstno,
+      phone: formData.phone,
+      emailid: formData.emailid,
+      contactperson: formData.contactperson,
+      currency: Number(formData.currency) || null,
+      currencycode: formData.currencycode || "",
+      active: formData.active,
+      createdby: formData.createdby || "admin",
+      modifiedby: formData.modifiedby || "admin",
+    };
+    console.log("Final Company Payload to send:", companyPayload);
+    // 🔹 Create/Update company
+    const companyEndpoint = isEdit
+      ? `${API_URL}/company/Updatecompany/${formData.id}`
+      : `${API_URL}/company/createcompany/`;
+
+    const companyRes = await authFetch(companyEndpoint, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(companyPayload),
+    });
+
+    if (!companyRes.ok) {
+      const errorData = await companyRes.json();
+      const errorMessage = Array.isArray(errorData)
+        ? errorData.map(e => e?.msg || JSON.stringify(e)).join(", ")
+        : errorData?.detail || `HTTP Error ${companyRes.status}`;
+      throw new Error(errorMessage);
+    }
+
+    const companyInfo = await companyRes.json();
+    console.log("full companyInfor",companyInfo);
+    console.log("companyInfo",companyInfo.id);
+
+    // 🔹 Prepare license payload
+    const licensePayload = {
+      companyid: companyInfo.id,
+      companyno: companyInfo.companyno,
+      planname: licenseData.planname||"",
+      planperiod: licenseData.planperiod||"",
+      active: licenseData.active,
+      createdby: "admin",
+      modifiedby: uname || "admin",
+    };
+     console.log("Final License Payload to send:", licensePayload);
+    // 🔹 Create/Update license
+    const licenseEndpoint = isEdit
+      ? `${API_URL}/licenseupdate/${licenseData.id}`
+      : `${API_URL}/addlicense/`;
+
+    const licenseRes = await authFetch(licenseEndpoint, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(licensePayload),
+    });
+
+    if (!licenseRes.ok) {
+      const errorData = await licenseRes.json();
+      const errorMessage = Array.isArray(errorData)
+        ? errorData.map(e => e?.msg || JSON.stringify(e)).join(", ")
+        : errorData?.detail || `HTTP Error ${licenseRes.status}`;
+      throw new Error(errorMessage);
+    }
+    if (!licenseRes.ok) {
+    // ❌ License failed -> rollback company
+    await authFetch(`${API_URL}/company/deletecompany/${companyInfo.id}`, {
+      method: "DELETE",
+    });
+
+    const errorData = await licenseRes.json();
+    throw new Error(errorData.detail || "License creation failed. Rolled back company.");
   }
+    // ✅ Success
+    onSaved();
+    onClose();
+  } catch (err) {
+    console.error("Error while saving company/license:", err);
+    setMessage(err.message || "Failed to save company/license.");
+  } finally {
+    setLoading(false);
+  }
+};
 
-    try {
-      const payload = { 
-        companycode: formData.companycode,
-        companyname: formData.companyname,
-        companyno: formData.compnyno,
-        adress: formData.adress,
-        gstno: formData.gstno,
-        phone: formData.phone,
-        emailid: formData.emailid,
-        contactperson: formData.contactperson,
-        currency: Number(formData.currency)||null,
-        currencycode: formData.currencycode||"",
-        active: formData.active,
-        createdby: formData.createdby || "admin",
-        modifiedby: formData.modifiedby || "admin"
-      };
-
-      const method = "POST"
-      const endpoint = isEdit ? `${API_URL}/company/Updatecompany/${formData.id}` : `${API_URL}/company/createcompany/`;
-
-      console.log("Sending payload:", payload);
-
-      const res = await authFetch(endpoint, {
-        method,
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload)
-      });
-
-      if (!res.ok) {
-        const errorData = await res.json();
-        console.error("API error details:", errorData);
-        // Handle array of validation errors or detail
-        if (Array.isArray(errorData)) {
-          throw errorData;
-        } else if (errorData?.detail) {
-          throw new Error(errorData.detail);
-        } else {
-          throw new Error(`HTTP error! Status: ${res.status}`);
-        }
-      }
-      await res.json();
-      onSaved();
-      onClose();
-    } catch (err) {
-      console.error("Error While Saving Company:", err);
-
-      if (Array.isArray(err)) {
-        // Backend returned multiple errors
-        const messages = err.map(e => e?.msg || JSON.stringify(e)).join(", ");
-        setMessage(messages);
-      } else if (err?.message) {
-        setMessage(err.message);
-      } else {
-        setMessage("Failed to save Company.");
-      }
-
-    } finally {
-      setLoading(false);
-    }
-  };
 
  
 
@@ -367,19 +450,201 @@ function CompanyForm({ onClose,onSaved, companyObject,navigateToList }) {
             </div>  
           </div>
           </div>
-          <div className="form-check mb-3">
+          <div className="row mb-3">
+            <div className="col-md-2">
+              <label htmlFor="planname" className="form-label">
+                Plan Name
+              </label>
+              <select
+              id="planname"
+              name="planname"
+              className="form-select"
+              value={licenseData.planname || ""}
+              onChange={(e) => {
+                const planname = e.target.value.toUpperCase(); 
+                let updatedData = { ...licenseData, planname };
+
+                if (planname === "TRIAL") {
+                  updatedData = {
+                    ...updatedData,
+                    planperiod: "7 Days",
+                    amount: 0,
+                  };
+                } else {
+                  updatedData = {
+                    ...updatedData,
+                    planperiod: "",
+                    amount: 0,
+                  };
+                } 
+                setLicenseData(updatedData);
+              }}
+              required
+            >
+              <option value="">-- Select Plan --</option>
+              <option value="TRIAL">Trial</option>
+              <option value="PRO">Pro</option>
+              <option value="ENTERPRISES">Enterprises</option>
+            </select> 
+            </div>
+
+            {/* 🔹 Plan Period Dropdown */}
+            <div className="col-md-2">
+              <label htmlFor="planperiod" className="form-label">
+                Plan Period
+              </label>
+             <select
+              id="planperiod"
+              name="planperiod"
+              className="form-select"
+              value={licenseData.planperiod || ""}
+              onChange={(e) => {
+                const period = e.target.value.toUpperCase();
+                let amount = 0;
+
+                // 🧮 Calculate amount based on plan + period
+                if (licenseData.planname === "PRO") {
+                  amount = period === "MONTHLY" ? 499 : 499 * 12;
+                } else if (licenseData.planname === "ENTERPRISES") {
+                  amount = period === "MONTHLY" ? 799 : 799 * 12;
+                } 
+                setLicenseData({
+                  ...licenseData,
+                  planperiod: period,
+                  amount,
+                });
+              }}
+              required
+              disabled={licenseData.planname === "TRIAL"}
+            >
+              <option value="">-- Select Period --</option>
+              <option value="MONTHLY">Monthly</option>
+              <option value="YEARLY">Yearly</option>
+            </select>
+            </div>
+            <div className="col-md-2">
+              <label className="form-label">License Status</label>
+              <input type="text" className="form-control" name="licensestatus"
+                      value={licenseData.licensestatus||"Pending"} onChange={handleChange} 
+                      readOnly/> 
+            </div >  
+              {licenseData.planperiod && (
+             
+              <div className="col-md-2 fw-bold text-success">
+                 <br />
+                 <br />
+                💰 Amount: ₹{licenseData.amount}
+              </div>
+            )} 
+          <div className="col-md-2">
+            <br />
+            <br />
             <input type="checkbox" className="form-check-input" name="active"
                    checked={formData.active} onChange={handleChange} />
             <label className="form-check-label">Active</label>
           </div>
+          </div>
 
-          <div>
-            <button type="submit" className="btn btn-primary me-2" disabled={loading}>
-              <FaSave className="me-1" /> {loading ? "Saving.." :isEdit? "Update" : "Save" }
-            </button>
-            <button type="button" className="btn btn-secondary" onClick={onClose} disabled={loading}>
-              <FaTimes className="me-1" /> Cancel
-            </button>
+          <div >
+           {(() => {
+            const plan = licenseData.planname?.toUpperCase();
+            const status = licenseData.licensestatus?.toLowerCase();
+
+            // 🔹 CASE 1: Trial plan → normal Save/Update
+            if (plan === "TRIAL") {
+              return (
+                <>
+                  <button
+                    type="submit"
+                    className="btn btn-primary me-2"
+                    disabled={loading}
+                  >
+                    <FaSave className="me-1" /> 
+                    {loading ? "Saving.." : isEdit ? "Update" : "Save"}
+                  </button>
+
+                  <button
+                    type="button"
+                    className="btn btn-secondary"
+                    onClick={onClose}
+                    disabled={loading}
+                  >
+                    <FaTimes className="me-1" /> Cancel
+                  </button>
+                </>
+              );
+            }
+
+            // 🔹 CASE 2: New license (not edit mode) → Pay Now
+            if (!isEdit) {
+              return (
+                <>
+                  <button
+                    onClick={handlePayNow}
+                    className="btn btn-success me-2"
+                    disabled={loading}
+                  >
+                    {loading ? "Processing..." : "Pay Now"}
+                  </button>
+
+                  <button
+                    type="button"
+                    className="btn btn-secondary"
+                    onClick={onClose}
+                    disabled={loading}
+                  >
+                    <FaTimes className="me-1" /> Cancel
+                  </button>
+                </>
+              );
+            }
+
+            // 🔹 CASE 3: Edit mode → show Pay Now only if status is pending or failed
+            if (isEdit && (status === "pending" || status === "failed")) {
+              return (
+                <>
+                  <button
+                    onClick={handlePayNow}
+                    className="btn btn-warning me-2"
+                    disabled={loading}
+                  >
+                    {loading ? "Processing..." : "Pay Now"}
+                  </button>
+
+                  <button
+                    type="button"
+                    className="btn btn-secondary"
+                    onClick={onClose}
+                    disabled={loading}
+                  >
+                    <FaTimes className="me-1" /> Cancel
+                  </button>
+                </>
+              );
+            }
+
+            // 🔹 CASE 4: Already paid or trial → disable Pay Now
+            return (
+              <>
+                <button
+                  className="btn btn-secondary me-2"
+                  disabled
+                >
+                  <FaSave className="me-1" /> Already Paid
+                </button>
+
+                <button
+                  type="button"
+                  className="btn btn-secondary"
+                  onClick={onClose}
+                  disabled={loading}
+                >
+                  <FaTimes className="me-1" /> Cancel
+                </button>
+              </>
+            );
+          })()}
+             
           </div>
         </form>
       </div>

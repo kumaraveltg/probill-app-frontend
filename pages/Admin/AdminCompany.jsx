@@ -23,6 +23,7 @@ function AdminCompany() {
           c.id,
           c.companycode,
           c.companyname,
+          c.companyno,
           c.active ? "Yes" : "No",       
           c.createdby,
           c.modifiedby,
@@ -35,6 +36,9 @@ function AdminCompany() {
           c.contactperson,
           c.currency,
           c.currencycode,
+          c.planname,
+          c.planperiod,
+          c.licensestatus, 
         ]
           .join(" ")
           .toLowerCase()
@@ -90,36 +94,36 @@ function AdminCompany() {
     <div className="container-fluid px-0 py-0"> 
          {!showForm ? (
            <>
-         <div className="d-flex justify-content-between align-items-center mt-0 mb-0">
-                 <div className="row mb-3 align-items-center">
-                     <div className="col-md-3">
-                     <h2>Company</h2>
-                   </div>
-                 </div>
-                   {/* Search box */}
-                   <div className="col-md-6">
-                     <div className="input-group">
-                       <span className="input-group-text bg-primary text-white">
-                         <FaSearch />
-                       </span>
-                       <input
-                         type="text"
-                         className="form-control"
-                         placeholder="Search Company..."
-                         value={search}
-                         onChange={(e) => setSearch(e.target.value)}
-                       />
-                     </div>
-                   </div>
+<div className="d-flex justify-content-between align-items-center mt-0 mb-0">
+        <div className="row mb-3 align-items-center">
+            <div className="col-md-3">
+            <h2>Company</h2>
+          </div>
+        </div>
+          {/* Search box */}
+          <div className="col-md-6">
+            <div className="input-group">
+              <span className="input-group-text bg-primary text-white">
+                <FaSearch />
+              </span>
+              <input
+                type="text"
+                className="form-control"
+                placeholder="Search Company..."
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+              />
+            </div>
+          </div>
          
-                   {/* Button */}
-                   <div className="col-md-3 text-end">
-                     <button className="btn btn-primary" onClick={handleNew}>
-                       <FaPlus className="me-2" />
-                       New Company
-                     </button>
-                   </div>
-                 </div>
+            {/* Button */}
+            <div className="col-md-3 text-end">
+              <button className="btn btn-primary" onClick={handleNew}>
+                <FaPlus className="me-2" />
+                New Company
+              </button>
+            </div>
+          </div>
 
           {/* Company table */}
     <div style={{ maxHeight: "500px", overflowY: "auto"}}>
@@ -129,12 +133,16 @@ function AdminCompany() {
             <th style={{width:"80px"}}></th>
             <th style={{width:"350px"}}>Company Name</th>
             <th style={{width:"200px"}}>Company Code</th>
+            <th style={{width:"150px"}}>Company No</th>
             <th style={{width:"650px"}}>Address</th>
             <th style={{width:"200px"}}>Gst No</th>
             <th style={{width:"100px"}}>Phone No</th>
             <th style={{width:"350px"}}>Email-id</th>
             <th style={{width:"350px"}}>Contact Person</th>
             <th style={{width:"150px"}}>Curency Code</th>
+            <th style={{width:"150px"}}>Plann Name</th>
+            <th style={{width:"150px"}}>Plann Period</th>
+            <th style={{width:"150px"}}>License Status</th>
             <th style={{width:"150px"}}>Active</th>
             <th style={{width:"250px"}}>Created By</th>
             <th style={{width:"200px"}}>Created On</th>
@@ -167,12 +175,16 @@ filteredCompanies.map((c) => (
     </button></td>
     <td>{c.companyname || ""}</td>
     <td>{c.companycode || ""}</td>
+    <td>{c.companyno}</td>
     <td >{c.adress || ""}</td>
     <td>{c.gstno || ""}</td>
     <td>{c.phone || ""}</td>
     <td>{c.emailid || ""}</td>
     <td>{c.contactperson || ""}</td>
     <td>{c.currencycode || "N/A"}</td>
+    <td>{c.planname}</td>
+    <td>{c.planperiod}</td>
+    <td>{c.licensestatus}</td>
     <td>{c.active ? "Yes" : "No"}</td>
     <td>{c.createdby || ""}</td>
     <td>{c.createdon}</td>

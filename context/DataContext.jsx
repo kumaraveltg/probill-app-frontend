@@ -25,6 +25,7 @@ export const DataProvider = ({ children }) => {
   const [invoice,setInvoice]= useState([]);
   const [receipts,setReceipts]= useState([]);
   const [adminCompany,setAdminCompany]= useState([]);
+  const [license,setLicense] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const limit = 10;
@@ -424,7 +425,7 @@ const fetchCustomer = useCallback(async(skip=0,limit=500) => {
   const fetchAdminCompany = useCallback(async(skip=0,limit=500) => {    
   try{
     setLoading(true);
-    const res= await authFetch(`${API_URL}/company/getcompany/?skip=${skip}&limit=${limit}`,
+    const res= await fetch(`${API_URL}/company/getcompany/?skip=${skip}&limit=${limit}`,
       { headers: {"Authorization": `Bearer ${accessToken}`}
     } );
     if(!res.ok) throw new Error(`HTTP Error ${res.status}`);
@@ -452,6 +453,28 @@ const fetchCustomer = useCallback(async(skip=0,limit=500) => {
     }
   }, [accessToken ]);
 
+  const fetchLicense = async (skip = 0, limit = 500) => {
+    try {
+      setLoading(true); 
+      const res = await authFetch(`${API_URL}/licenselist/?skip=${skip}&limit=${limit}`,
+        {
+          headers:{
+            "Authorization": `Bearer ${accessToken}`
+          }
+        }
+      );
+      if (!res.ok) throw new Error(`HTTP Error ${res.status}`);
+      const data = await res.json();
+      console.log("API response for Licenses:", data);
+      console.log("total:", data.total);
+      setLicense(data.license_list || []);
+      setTotal(data.total || 0);
+    } catch (err) { 
+      setError(err.message);
+    } finally {
+      setLoading(false);
+    }
+  };
   
 
   return (
@@ -472,7 +495,7 @@ const fetchCustomer = useCallback(async(skip=0,limit=500) => {
         total,
         companyid,busers,fetchUsers,userRole,fetchUserRole,finyr,fetchFinyr,taxmaster,fetchTaxMaster,
         items,fetchItems,test,hsn,fetchHsn,customer,fetchCustomer,currencies,fetchCurrencies,
-        invoice,fetchInvoices,receipts,fetchReceipts,adminCompany,fetchAdminCompany
+        invoice,fetchInvoices,receipts,fetchReceipts,adminCompany,fetchAdminCompany,fetchLicense,license
       }}
     >
       {children}
