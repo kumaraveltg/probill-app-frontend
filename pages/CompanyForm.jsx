@@ -27,6 +27,10 @@ function CompanyForm({ onClose,onSaved, companyObject,navigateToList }) {
     contactperson:"",
     currency:null,
     currencycode: "", 
+    licensesid:null,
+    planname: "",
+    planperiod:"",
+    licensestatus:"",
     active: true,
     createdby: "admin",
     modifiedby: uname
@@ -37,21 +41,10 @@ function CompanyForm({ onClose,onSaved, companyObject,navigateToList }) {
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState(""); 
   const [showCurrencyModal,setShowCurrencyModal]= useState(false);
-  const [licenseData,setLicenseData] = useState({
-    id: null, 
-    companyid:null,
-    companyno: "",
-    planname: "",     
-    planperiod:"",  
-    licensestatus:"Pending",
-    active: true,
-    createdby: "admin",
-    modifiedby: uname
-  })
+  const [licenseData,setLicenseData] = useState("") 
 
   useEffect(() => {
-    fetchCurrencies(); 
-    fetchLicense();
+    fetchCurrencies();  
   },[ ])
 
     const currecnySelection = useMemo(() =>{
@@ -65,20 +58,7 @@ function CompanyForm({ onClose,onSaved, companyObject,navigateToList }) {
         ) )},[currencies]
     );
    
-    const licenseOptions = useMemo(() => {
-      if(!license|| !Array.isArray(license))
-        return [];
-      return license.map( c => ({
-          value: c.id,
-          label: c.planname,
-          planperiod:c.planperiod,
-          companyid: c.companyid,
-        })
-      )
-    },[license]
-    )
-
-    console.log("selected Licenseoption",licenseOptions);
+    
 
  const handleOpenModal= () => {
   setShowCurrencyModal(true);
@@ -92,12 +72,7 @@ function CompanyForm({ onClose,onSaved, companyObject,navigateToList }) {
       c => c.value === Number(companyObject.currency)
     );
   }
-  let selectedlicense = null
-  if(licenseData && licenseOptions.length> 0){
-    selectedlicense = licenseOptions.find(
-      c => c.label === licenseData.planname && c.companyid === companyObject.id
-    )
-  }
+   
    
 
   setFormData({
@@ -111,9 +86,11 @@ function CompanyForm({ onClose,onSaved, companyObject,navigateToList }) {
     emailid: companyObject?.emailid || "",
     contactperson: companyObject?.contactperson || "",
     currency: selectedCurrency?.value || null,
-    currencycode: selectedCurrency?.label || "INR",
-    planname: selectedlicense?.label || licenseData?.planname || "",
-    planperiod: selectedlicense?.planperiod || licenseData?.planperiod || "",
+    currencycode: selectedCurrency?.label || "INR", 
+    licensesid:companyObject?.licensesid||null,
+    planname:companyObject?.planname||"",
+    planperiod:companyObject?.planperiod||"",
+    licensestatus:companyObject?.licensestatus||"",
     active: companyObject?.active ?? true,
     createdby: companyObject?.createdby || "admin",
     modifiedby: uname,
@@ -131,21 +108,12 @@ function CompanyForm({ onClose,onSaved, companyObject,navigateToList }) {
     const selectedCurrency = currecnySelection.find(
       c => c.value === Number(companyObject.currency)
     );
-
-    // 🔹 Match license
-    const selectedLicense = licenseOptions.find(
-      c =>
-        c.label === companyObject.planname && // ✅ use companyObject.planname instead
-        c.companyid === companyObject.id
-    );
-
+   
     // 🔹 Update form only when companyObject exists
     setFormData({
       ...companyObject,
       currency: selectedCurrency?.value || null,
-      currencycode: selectedCurrency?.label || "",
-      planname: selectedLicense?.label || companyObject?.planname || "",
-      planperiod: selectedLicense?.planperiod || companyObject?.planperiod || "",
+      currencycode: selectedCurrency?.label || "", 
     });
 
     setIsEdit(true);
@@ -153,9 +121,8 @@ function CompanyForm({ onClose,onSaved, companyObject,navigateToList }) {
     // New mode
     resetForm();
   }
-}, [companyObject, currecnySelection, licenseOptions]);
+}, [companyObject, currecnySelection]); 
 
- 
   const handleChange = (e) => {
   const { name, value, type, checked } = e.target;
   setFormData(prev => ({
@@ -177,15 +144,15 @@ const handlePayNow= async(e)=>{
 const handleSubmit = async (e) => {
   e.preventDefault();
   setLoading(true);
-  setMessage(""); // clear old message
+  setMessage("");
 
   try {
-    // 🔹 Basic validation
-    if (!formData.companycode || !formData.companyname || !licenseData.planname) {
+    // Basic validation
+    if (!formData.companycode || !formData.companyname || !formData.planname) {
       throw new Error("Please fill in all required fields.");
     }
 
-    // 🔹 Email validation
+    // Email validation
     if (formData.emailid) {
       const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
       if (!emailRegex.test(formData.emailid)) {
@@ -193,7 +160,7 @@ const handleSubmit = async (e) => {
       }
     }
 
-    // 🔹 Prepare company payload
+    // Company payload
     const companyPayload = {
       companycode: formData.companycode,
       companyname: formData.companyname,
@@ -205,12 +172,15 @@ const handleSubmit = async (e) => {
       contactperson: formData.contactperson,
       currency: Number(formData.currency) || null,
       currencycode: formData.currencycode || "",
+      planname: formData.planname || "",
+      planperiod: formData.planperiod || "",
       active: formData.active,
       createdby: formData.createdby || "admin",
       modifiedby: formData.modifiedby || "admin",
     };
+
     console.log("Final Company Payload to send:", companyPayload);
-    // 🔹 Create/Update company
+
     const companyEndpoint = isEdit
       ? `${API_URL}/company/Updatecompany/${formData.id}`
       : `${API_URL}/company/createcompany/`;
@@ -223,54 +193,116 @@ const handleSubmit = async (e) => {
 
     if (!companyRes.ok) {
       const errorData = await companyRes.json();
-      const errorMessage = Array.isArray(errorData)
-        ? errorData.map(e => e?.msg || JSON.stringify(e)).join(", ")
-        : errorData?.detail || `HTTP Error ${companyRes.status}`;
-      throw new Error(errorMessage);
+      throw new Error(errorData?.detail || `HTTP Error ${companyRes.status}`);
     }
 
     const companyInfo = await companyRes.json();
-    console.log("full companyInfor",companyInfo);
-    console.log("companyInfo",companyInfo.id);
+    console.log("Company Info:", companyInfo);
 
-    // 🔹 Prepare license payload
-    const licensePayload = {
-      companyid: companyInfo.id,
-      companyno: companyInfo.companyno,
-      planname: licenseData.planname||"",
-      planperiod: licenseData.planperiod||"",
-      active: licenseData.active,
-      createdby: "admin",
-      modifiedby: uname || "admin",
-    };
-     console.log("Final License Payload to send:", licensePayload);
-    // 🔹 Create/Update license
-    const licenseEndpoint = isEdit
-      ? `${API_URL}/licenseupdate/${licenseData.id}`
-      : `${API_URL}/addlicense/`;
+    // Proceed only in create mode
+    if (!isEdit) {
+       // UserRole payload
+      const userrolePayload = {
+        companyid: companyInfo.id,
+        companyno: companyInfo.companyno,
+        rolename: "default",
+        Permissions: [], 
+        active: formData.active,
+        createdby: "admin",
+        modifiedby: "admin",
+        sourceid:companyInfo.id
+      };
+       
+      console.log("Final usersRole Payload to send:", userrolePayload);
 
-    const licenseRes = await authFetch(licenseEndpoint, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(licensePayload),
-    });
+      const userroleRes = await authFetch(`${API_URL}/adduserrole/`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(userrolePayload),
+      });
 
-    if (!licenseRes.ok) {
-      const errorData = await licenseRes.json();
-      const errorMessage = Array.isArray(errorData)
-        ? errorData.map(e => e?.msg || JSON.stringify(e)).join(", ")
-        : errorData?.detail || `HTTP Error ${licenseRes.status}`;
-      throw new Error(errorMessage);
-    }
-    if (!licenseRes.ok) {
-    // ❌ License failed -> rollback company
-    await authFetch(`${API_URL}/company/deletecompany/${companyInfo.id}`, {
-      method: "DELETE",
-    });
+      if (!userroleRes.ok) {
+        await authFetch(`${API_URL}/company/deletecompany/${companyInfo.id}`, {
+          method: "DELETE",
+        });
+        throw new Error("User creation failed. Company rolled back.");
+      }
 
-    const errorData = await licenseRes.json();
-    throw new Error(errorData.detail || "License creation failed. Rolled back company.");
-  }
+      const userRoleInfo = await userroleRes.json();
+
+       console.log("User Role Info",userRoleInfo);
+
+      // Users payload
+      const usersPayload = {
+        companyid: companyInfo.id,
+        companyno: companyInfo.companyno,
+        username: "superadmin",
+        password: "123456",
+        firstname: "Super Admin",
+        emailid: companyInfo.emailid,
+        userroleids: [userRoleInfo.id],
+        usertype: "USERS",
+        active: formData.active,
+        createdby: "admin",
+        modifiedby: "admin",
+        sourceid:companyInfo.id
+      };
+       
+      console.log("Final users Payload to send:", usersPayload);
+
+      const usersRes = await authFetch(`${API_URL}/users/users/`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(usersPayload),
+      });
+
+      if (!usersRes.ok) {
+        await authFetch(`${API_URL}/company/deletecompany/${companyInfo.id}`, {
+          method: "DELETE",
+        });
+
+         await authFetch(`${API_URL}/deleteuserrole/${userRoleInfo.id}`, {
+          method: "DELETE",
+        });
+        throw new Error("User creation failed. Company rolled back."); 
+      }
+
+      const  userInfo = await usersRes.json();
+      // License payload
+      const licensePayload = {
+        companyid: companyInfo.id,
+        companyno: companyInfo.companyno,
+        planname: formData.planname || "",
+        planperiod: formData.planperiod || "",
+        active: formData.active,
+        createdby: "admin",
+        modifiedby: uname || "admin",
+        sourceid: companyInfo.id,
+      };
+      
+    console.log("Final License Payload to send:", licensePayload);
+
+      const licenseRes = await authFetch(`${API_URL}/addlicense/`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(licensePayload),
+      });
+
+      if (!licenseRes.ok) {
+        await authFetch(`${API_URL}/company/deletecompany/${companyInfo.id}`, {
+          method: "DELETE",
+        });
+         await authFetch(`${API_URL}/deleteuserrole/${userRoleInfo.id}`, {
+          method: "DELETE",
+        });
+         await authFetch(`${API_URL}/user/delete/${userInfo.id}`, {
+          method: "DELETE",
+        });
+
+        throw new Error("License creation failed. Company rolled back.");
+      }
+      
+    } 
     // ✅ Success
     onSaved();
     onClose();
@@ -282,6 +314,14 @@ const handleSubmit = async (e) => {
   }
 };
 
+
+const getPlanPeriodOptions = (planname) => {
+  if (planname === "TRIAL") {
+    return ["7 DAYS"];
+  } else {
+    return ["MONTHLY", "YEARLY"];
+  }
+};
 
  
 
@@ -435,7 +475,7 @@ const handleSubmit = async (e) => {
                       height: "38px",
                       minHeight: "38px",
                     }),
-                  }}
+                  }} required
                 />
               </div>
                   </div>
@@ -451,42 +491,41 @@ const handleSubmit = async (e) => {
           </div>
           </div>
           <div className="row mb-3">
-            <div className="col-md-2">
-              <label htmlFor="planname" className="form-label">
-                Plan Name
-              </label>
-              <select
-              id="planname"
-              name="planname"
-              className="form-select"
-              value={licenseData.planname || ""}
-              onChange={(e) => {
-                const planname = e.target.value.toUpperCase(); 
-                let updatedData = { ...licenseData, planname };
-
-                if (planname === "TRIAL") {
-                  updatedData = {
-                    ...updatedData,
-                    planperiod: "7 Days",
-                    amount: 0,
-                  };
-                } else {
-                  updatedData = {
-                    ...updatedData,
-                    planperiod: "",
-                    amount: 0,
-                  };
-                } 
-                setLicenseData(updatedData);
-              }}
-              required
-            >
-              <option value="">-- Select Plan --</option>
-              <option value="TRIAL">Trial</option>
-              <option value="PRO">Pro</option>
-              <option value="ENTERPRISES">Enterprises</option>
-            </select> 
-            </div>
+      <div className="col-md-2">
+        <label htmlFor="planname" className="form-label">
+          Plan Name
+        </label>
+        <select
+        id="planname"
+        name="planname"
+        className="form-select"
+        value={formData.planname || ""}
+        onChange={(e) => {
+          const planname = e.target.value.toUpperCase(); 
+          let updatedData = { ...formData, planname }; 
+          if (planname === "TRIAL") {
+            updatedData = {
+              ...updatedData,
+              planperiod: "7 DAYS",
+              amount: 0,
+            };
+          } else {
+            updatedData = {
+              ...updatedData,
+              planperiod: "",
+              amount: 0,
+            };
+          } 
+          setFormData(updatedData);
+        }}
+        required
+      >
+        <option value="">-- Select Plan --</option>
+        <option value="TRIAL">Trial</option>
+        <option value="PRO">Pro</option>
+        <option value="ENTERPRISES">Enterprises</option>
+      </select> 
+      </div>
 
             {/* 🔹 Plan Period Dropdown */}
             <div className="col-md-2">
@@ -497,43 +536,49 @@ const handleSubmit = async (e) => {
               id="planperiod"
               name="planperiod"
               className="form-select"
-              value={licenseData.planperiod || ""}
+              value={formData.planperiod || ""}
               onChange={(e) => {
                 const period = e.target.value.toUpperCase();
                 let amount = 0;
 
                 // 🧮 Calculate amount based on plan + period
-                if (licenseData.planname === "PRO") {
+                if (formData.planname === "PRO") {
                   amount = period === "MONTHLY" ? 499 : 499 * 12;
-                } else if (licenseData.planname === "ENTERPRISES") {
+                } else if (formData.planname === "ENTERPRISES") {
                   amount = period === "MONTHLY" ? 799 : 799 * 12;
                 } 
-                setLicenseData({
-                  ...licenseData,
+                else if (formData.planname === "TRIAL"){
+                  amount = 0;
+                }
+                setFormData({
+                  ...formData,
                   planperiod: period,
                   amount,
                 });
               }}
               required
-              disabled={licenseData.planname === "TRIAL"}
+              disabled={formData.planname === "TRIAL"}
             >
-              <option value="">-- Select Period --</option>
-              <option value="MONTHLY">Monthly</option>
-              <option value="YEARLY">Yearly</option>
+               <option value="">-- Select Period --</option>
+              {getPlanPeriodOptions(formData.planname).map((option) => (
+                <option key={option} value={option}>
+                  {option}
+                </option>
+              ))}
             </select>
             </div>
             <div className="col-md-2">
               <label className="form-label">License Status</label>
               <input type="text" className="form-control" name="licensestatus"
-                      value={licenseData.licensestatus||"Pending"} onChange={handleChange} 
+                      value={formData.licensestatus||"Pending"} onChange={handleChange} 
                       readOnly/> 
             </div >  
-              {licenseData.planperiod && (
+              {formData.planperiod && (
              
               <div className="col-md-2 fw-bold text-success">
                  <br />
                  <br />
-                💰 Amount: ₹{licenseData.amount}
+                💰 Amount: ₹{formData.amount}
               </div>
             )} 
           <div className="col-md-2">
@@ -547,8 +592,8 @@ const handleSubmit = async (e) => {
 
           <div >
            {(() => {
-            const plan = licenseData.planname?.toUpperCase();
-            const status = licenseData.licensestatus?.toLowerCase();
+            const plan = formData.planname?.toUpperCase();
+            const status = formData.licensestatus?.toLowerCase();
 
             // 🔹 CASE 1: Trial plan → normal Save/Update
             if (plan === "TRIAL") {

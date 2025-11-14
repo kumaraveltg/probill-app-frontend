@@ -19,7 +19,7 @@ function AdminTopbar() {
           <img src="/billinglogo.jpg"         
           alt="Logo" 
           style={{ width: '60px', height: '50px', marginRight: '10px', border: "2px solid black"  }} />  
-          <h3 className="m-0 text-white bold" >ADMIN PANNEL</h3>  
+          <h3 className="m-0 text-white bold" >Admin Panel</h3>  
           </div>   
   
         {/* Right: Profile Icon */}

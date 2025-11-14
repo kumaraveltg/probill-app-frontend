@@ -56,12 +56,34 @@ function Login() {
     return await res.json();
   };
 
+  // Check license validity API
+const validateLicense = async (companyno) => {
+  const res = await fetch(`${API_URL}/licensevalid/${companyno}`);
+
+  if (!res.ok) {
+    const errData = await res.json().catch(() => ({}));
+    throw new Error(errData.detail || "Unable to validate license");
+  }
+
+  const data = await res.json();
+  console.log("License validation:", data);
+
+  if (data.status !== "valid") {
+    throw new Error(`Invalid. ${data.message}`);
+  }
+
+  return data;
+};
+
+
   const handleLogin = async (e) => {
     e.preventDefault();
     setError("");
     setLoading(true);
 
     try {
+
+       await validateLicense(companynoInput);
       // 1️⃣ Login
       const data = await jwttoken(project, companynoInput, usernameInput, password);
 

@@ -48,10 +48,8 @@ function AdminCompany() {
 
     
     useEffect(() => {
-        console.log("Current Access Token in useEffect:", accessToken);
-    if (accessToken) { 
-      fetchAdminCompany(page * limit, limit);
-    }
+        
+      fetchAdminCompany(page * limit, limit); 
   }, [page * limit, limit,total]);
 
 
@@ -67,28 +65,36 @@ function AdminCompany() {
    
 
   const handleDelete = async (id) => {
-    if (!window.confirm("Are you sure you want to delete this company?")) return;
-    try {
-      const res = await fetch(`${API_URL}/company/deletecompany/${id}`, 
-        { method: "DELETE" ,
-        headers: {
-        'Authorization': `Bearer ${accessToken}` // Add auth header if needed
-      }}
+  if (!window.confirm("Are you sure you want to delete this company?")) return;
 
-      );
-      console.log("company delete",res);
-        const data = await res.json().catch(() => ({}));
-      if (!res.ok) {
-        throw new Error(data.detail||`HTTP${res.status}`); 
-        
-      } 
-      alert(data.message || "Company deleted successfully");
-       fetchAdminCompany(page * limit, limit); 
-    } catch (err) {
-      console.error("Error deleting company:", err); 
-      
+  try {
+    const res = await fetch(`${API_URL}/company/deletecompany/${id}`, {
+      method: "DELETE",
+      headers: {
+        "Authorization": `Bearer ${accessToken}`,
+      },
+    });
+
+    let data = {};
+    try {
+      data = await res.json();
+    } catch {
+      data = {};
     }
-  };
+
+    if (!res.ok) {
+      const errorMessage = data.detail || `HTTP Error ${res.status}`;
+      alert(errorMessage);  // ✅ show user-friendly message
+      throw new Error(errorMessage);
+    }
+
+    alert(data.message || "Company deleted successfully");
+    fetchAdminCompany(page * limit, limit);
+  } catch (err) {
+    console.error("Error deleting company:", err);
+  }
+};
+
 
   return (
     <div className="container-fluid px-0 py-0"> 
@@ -130,11 +136,11 @@ function AdminCompany() {
       <table className="table table-bordered table-hover"  style={{ width: "100%", tableLayout: "fixed", minWidth: "1600px" }}>
         <thead className="table-light">
           <tr>
-            <th style={{width:"80px"}}></th>
+            <th style={{width:"50px"}}></th>
             <th style={{width:"350px"}}>Company Name</th>
             <th style={{width:"200px"}}>Company Code</th>
             <th style={{width:"150px"}}>Company No</th>
-            <th style={{width:"650px"}}>Address</th>
+            <th style={{width:"450px"}}>Address</th>
             <th style={{width:"200px"}}>Gst No</th>
             <th style={{width:"100px"}}>Phone No</th>
             <th style={{width:"350px"}}>Email-id</th>
@@ -148,31 +154,26 @@ function AdminCompany() {
             <th style={{width:"200px"}}>Created On</th>
             <th style={{width:"200px"}}>Modified By</th>
             <th style={{width:"200px"}}>Modified On</th> 
-            <th style={{widht:"50px"}}></th>
+            <th style={{widht:"80px"}}></th>
           </tr>
         </thead>
 <tbody>
   {Loading ? (
     <tr>
-      <td colSpan="13" className="text-center">Loading...</td>
+      <td colSpan="7" className="text-center">Loading...</td>
     </tr>
   ) : error ? (
     <tr>
-      <td colSpan="13" className="text-center text-danger">Error: {error}</td>
+      <td colSpan="7" className="text-center text-danger">Error: {error}</td>
     </tr>
   ) : filteredCompanies.length === 0 ? (
     <tr>
-      <td colSpan="13" className="text-center">No companies found.</td>
+      <td colSpan="7" className="text-center">No companies found.</td>
     </tr>
   ) : (
 filteredCompanies.map((c) => (
 <tr key={c.id}>
-    <td> <button
-        className="btn btn-sm btn-primary me-2"
-        onClick={() => {setCompanyObject(c); setShowForm(true)} }
-    >
-        <i className="bi bi-pencil"></i>
-    </button></td>
+    <td> <button    className="btn btn-sm btn-primary me-2"  onClick={() => {setCompanyObject(c); setShowForm(true)} }   > <i className="bi bi-pencil"></i>   </button></td>
     <td>{c.companyname || ""}</td>
     <td>{c.companycode || ""}</td>
     <td>{c.companyno}</td>
@@ -190,14 +191,7 @@ filteredCompanies.map((c) => (
     <td>{c.createdon}</td>
     <td>{c.modifiedby || ""}</td>
     <td>{c.modifiedon }</td> 
-    <td> 
-      <button
-        className="btn btn-sm btn-danger"
-        onClick={() => handleDelete(c.id)}
-    >
-        <i className="bi bi-trash3"></i>
-    </button>  
-    </td>
+    <td style={{widht:"80px"}}> <button   className="btn btn-sm btn-danger"  onClick={() => handleDelete(c.id)} ><i className="bi bi-trash3"></i> </button>      </td>
 </tr>
 ))
 )}

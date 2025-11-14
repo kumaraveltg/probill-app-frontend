@@ -425,7 +425,7 @@ const fetchCustomer = useCallback(async(skip=0,limit=500) => {
   const fetchAdminCompany = useCallback(async(skip=0,limit=500) => {    
   try{
     setLoading(true);
-    const res= await fetch(`${API_URL}/company/getcompany/?skip=${skip}&limit=${limit}`,
+    const res= await authFetch(`${API_URL}/company/getcompany/?skip=${skip}&limit=${limit}`,
       { headers: {"Authorization": `Bearer ${accessToken}`}
     } );
     if(!res.ok) throw new Error(`HTTP Error ${res.status}`);
@@ -442,16 +442,6 @@ const fetchCustomer = useCallback(async(skip=0,limit=500) => {
     setLoading(false);
   }
 },[ accessToken,authFetch])
-
- //✅ Initial data load - only when accessToken is available
-  useEffect(() => {
-    if (accessToken) {
-      const fetchData = async () => {   
-        await fetchAdminCompany(0, 500); 
-      }; 
-      fetchData();
-    }
-  }, [accessToken ]);
 
   const fetchLicense = async (skip = 0, limit = 500) => {
     try {
@@ -476,6 +466,17 @@ const fetchCustomer = useCallback(async(skip=0,limit=500) => {
     }
   };
   
+  
+ //✅ Initial data load - only when accessToken is available
+  useEffect(() => {
+    if (accessToken) {
+      const fetchData = async () => {   
+        await fetchAdminCompany(0, 500); 
+      }; 
+      fetchData();
+    }
+  }, [accessToken ]);
+
 
   return (
     <DataContext.Provider

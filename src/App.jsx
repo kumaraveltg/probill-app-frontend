@@ -23,6 +23,7 @@ import Customer from "../pages/Customer.jsx";
 import Invoice from "../pages/Invoice.jsx";
 import Receipts from "../pages/Receipts.jsx";  
 import AdminRoutes from "../components/Index.jsx" 
+import EmailConfig from "../pages/EmailConfig.jsx";
 
 
 
@@ -86,6 +87,7 @@ function App() {
               <Route path="customer" element={<Customer />} />
               <Route path="invoice" element={<Invoice />} />
               <Route path="receipts" element={<Receipts />} /> 
+              <Route path="emailconfig" element={<EmailConfig />} />
               
             </Route>
 

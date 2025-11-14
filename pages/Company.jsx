@@ -74,9 +74,12 @@ function Company() {
       );
       console.log("company delete",res);
       if (res.ok) {
-        fetchCompanies(page * limit, limit);
-      } else {
-        console.error("Failed to delete company");
+        fetchCompanies(page * limit, limit); 
+      } 
+      else {
+         const errorData = await res.json().catch(() => ({}));  
+         throw new Error(errorData.detail || `Delete failed with status ${res.status}`);
+         
       }
     } catch (err) {
       console.error("Error deleting company:", err);

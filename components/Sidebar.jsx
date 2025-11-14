@@ -42,21 +42,42 @@ function Sidebar({ collapsed, setCollapsed }) {
               Dashboard
             </Link>
           )}
-        </li>
-        <li
-          className="nav-item d-flex align-items-center mb-2 sidebar-item"
-          data-bs-toggle={collapsed ? "tooltip" : ""}
-          data-bs-placement="right"
-          title="Settings"
-        >
-          <i className="bi bi-gear me-2"></i>
-          {!collapsed && (
-            <Link className="nav-link text-light" to="/settings">
-              Settings
-            </Link>
-          )}
-        </li>
+        </li> 
       </ul>
+
+     <ul className="nav flex-column">
+        <li className="nav-item">
+          <div
+            className="d-flex align-items-center"
+            onClick={() => setOpen((prev) => !prev)}
+            style={{ cursor: "pointer", userSelect: "none" }}
+            aria-expanded={open}
+            role="button"
+          >
+            <i className="bi bi-folder me-2"></i>
+            {!collapsed && (
+              <>
+                <span className="nav-link text-light p-0">Settings</span>
+                <i
+                  className={`bi ${
+                    open ? "bi-chevron-down" : "bi-chevron-right"
+                  } ms-auto`}
+                ></i>
+              </>
+            )}
+          </div> 
+          {!collapsed && open && (
+            <ul className="nav flex-column ms-4 mt-1">
+              <li className="nav-item sidebar-subitem">
+                <Link className="nav-link text-light small p-1" to="/EmailConfig">
+                  Email Settings
+                </Link>
+              </li>
+            </ul> 
+          )}
+            </li>
+
+          </ul>
 
       {/* General Master Menu */}
       <ul className="nav flex-column">

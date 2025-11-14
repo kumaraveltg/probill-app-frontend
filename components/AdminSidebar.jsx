@@ -91,6 +91,11 @@ function AdminSidebar({ collapsed, setCollapsed }) {
                   AdminCompany
                 </Link>
               </li> 
+              <li className="nav-item sidebar-subitem">
+                <Link className="nav-link text-light small p-1" to="/admin/adminlicense">
+                  Licenses
+                </Link>
+              </li> 
             </ul>
           )}
         </li>
