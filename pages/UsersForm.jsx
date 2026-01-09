@@ -4,7 +4,8 @@ import DataContext, { useData } from "../context/DataContext";
 import { API_URL } from "../components/Config";
 import SearchModal from "../components/SearchModal"; 
 import { AuthContext } from "../context/AuthContext";
-import { Multiselect } from "multiselect-react-dropdown";
+//import { Multiselect } from "multiselect-react-dropdown";
+import Select from "react-select";
 
 
  function UsersForm( {onSaved, usersObject, setUsersObject, navigateToList, handleDelete, onClose} ) {
@@ -321,7 +322,8 @@ const columns = [
             </div> 
             <div className="col-md-3">
               <label className="form-label fw-bold">Select Roles</label>
-              <Multiselect
+              <Select
+                isMulti
                 options={roleOptions}
                 displayValue="label"
                 selectedValues={roleOptions.filter((r) =>

@@ -3,7 +3,7 @@ import { FaSave, FaTimes } from "react-icons/fa";
 import Select from "react-select";
 import { NumericFormat } from 'react-number-format';
 import { AuthContext } from "../context/AuthContext";
-import { API_URL } from "../components/Config";
+import { API_URL ,APP_URL} from "../components/Config";
 import SearchModal from "../components/SearchModal";
 import DataContext, { useData } from "../context/DataContext";
 import { PDFDownloadLink, PDFViewer } from "@react-pdf/renderer"
@@ -11,6 +11,8 @@ import { pdf } from "@react-pdf/renderer";
 import InvoicePDF from "./InvoicePDF"; 
 import CustomerForm from "./CustomerForm";
 import ItemsForm from "./ItemsForm";
+import QRCode from "qrcode";
+
 
 
 function InvoiceForm({ onClose, onSaved, invoiceObject, setInvoiceObject, navigateToList, handleDelete,invoiceno,   }) {
@@ -45,9 +47,11 @@ function InvoiceForm({ onClose, onSaved, invoiceObject, setInvoiceObject, naviga
     supplytype:"",
     remarks:"",
     createdby: "",
-    modifiedby: ""
+    modifiedby: "",
+    attachedfile: null,
+    attachedfilename: null,
   });
-
+ 
   const [showModal, setShowModal] = useState(false);
   const [isEdit, setIsEdit] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -59,6 +63,7 @@ function InvoiceForm({ onClose, onSaved, invoiceObject, setInvoiceObject, naviga
   const [showPdfModal, setShowPdfModal] = useState(false);
   const [showModalCustomer,setShowModalCustomer]= useState(false);
   const [showModalItem,setShowModalItem] = useState(false);
+  const [selectedFile, setSelectedFile] = useState(null);
 
   const fallbackParams = JSON.parse(localStorage.getItem("globalParams") || "{}");
   const uname = ctxUsername || fallbackParams.username || "admin";
@@ -71,7 +76,16 @@ function InvoiceForm({ onClose, onSaved, invoiceObject, setInvoiceObject, naviga
   const itemOptions = useMemo(() => items.map(tm => ({ value  : tm.id, label: tm.productname, productcode: tm.productcode, selling_uom: tm.selling_uom,suom: tm.suom,taxmasterid: tm.taxmasterid,taxname:tm.taxname,taxrate:tm.taxrate ,selling_price:tm.selling_price})), [items]);
   const uomOptions = useMemo(() => uoms.map(tm => ({ value: tm.id, label: tm.uomcode})), [uoms]);
   const taxOptions = useMemo(() => (taxmaster || []).map(tm => ({ value: tm.id, label: tm.taxname,taxrate :tm.taxrate})), [taxmaster]);
- 
+ const fileUrl =
+  formData.companyno && formData.attachedfilename
+    ? `${API_URL}/upload/${formData.companyno}/${encodeURIComponent(formData.attachedfilename)}`
+    : null;
+
+console.log("Attachment URL:", fileUrl);
+const [qrImage, setQrImage] = useState(null); 
+
+
+
   const convertDate = (dateStr) => {
       if (!dateStr) return "";
       if (dateStr.includes("-")) return dateStr;
@@ -271,7 +285,9 @@ const enhancedItemOptions = [
       supplytype:"",
       remarks:"",
       createdby: uname || "",
-      modifiedby: uname || ""
+      modifiedby: uname || "",
+      attachedfile: null,
+      attachedfilename: null,
     });
 
     setInvfooter({
@@ -555,7 +571,26 @@ const calculateFooter = () => {
     setLoading(false);
     return;
   }
+ let attachedfilePath = null;
 
+  if (selectedFile) {
+    const fd = new FormData();
+    fd.append("file", selectedFile);
+    fd.append("companyno", formData.companyno);
+
+    const res = await fetch(`${API_URL}/upload`, {
+      method: "POST",
+      body: fd,
+    });
+
+    if (!res.ok) {
+      alert("Attachment upload failed");
+      return; // STOP invoice save
+    }
+
+    const uploadResult = await res.json();
+    attachedfilePath = uploadResult.attachedfile;
+  }
   try {
     // Build payload
     const payload = {
@@ -582,6 +617,8 @@ const calculateFooter = () => {
       totnetamount: invfooter.totnetamount || 0,
       createdby: formData.createdby || uname,
       modifiedby: formData.modifiedby || uname,
+      attachedfile: formData.attachedfile || null,
+      attachedfilename: formData.attachedfilename || null,
 
       // ✅ Build invoice details properly using 'c' from invdetail array
       invdetails: invdetail.map(c => ({
@@ -714,6 +751,27 @@ const calculateFooter = () => {
   }, [formData.invoiceno, isEdit, API_URL]);
    
  
+  useEffect(() => {
+  const generateQR = async () => {
+    if (!formData.invoiceno) return;
+
+    const qrValue = `${APP_URL}/invoice/${formData.invoiceno}`;
+    const qr = await QRCode.toDataURL(qrValue);
+    setQrImage(qr);
+    setPdfReady(true);
+  };
+
+  generateQR();
+}, [formData.invoiceno]);
+
+// console.log("Invoice No:", formData.invoiceno);
+// console.log("QR Image:", qrImage);
+
+// useEffect(() => {
+//   console.log("Invoice:", formData.invoiceno);
+//   console.log("QR Image:", qrImage?.substring(0, 50));
+// }, [qrImage]);
+
   // Map backend data to PDF format
    
 const pdfData = pdfHeader && pdfDetails && pdfDetails.length > 0 ? {
@@ -742,6 +800,7 @@ const pdfData = pdfHeader && pdfDetails && pdfDetails.length > 0 ? {
       scity: pdfHeader?.shipping_cityname || "",
       sstate: pdfHeader?.shipping_statename || "",
       spincode: pdfHeader?.shipping_pincode || "",
+      qrvalue: pdfHeader?.qrvalue || "",
     },
     items: Array.isArray(pdfDetails) ? pdfDetails.map((d) => ({
       desc: d?.productname || d?.productcode || "-",
@@ -769,14 +828,16 @@ const pdfData = pdfHeader && pdfDetails && pdfDetails.length > 0 ? {
     }) ) : [] , 
   } : null;
 
+ 
 const handleOpenPdf = () => {
-  const blob = pdf(<InvoicePDF data={pdfData} />).toBlob(); // create a blob from your PDF
+  const blob = pdf(<InvoicePDF data={pdfData} qrImage={qrImage} />).toBlob(); // create a blob from your PDF
   blob.then((pdfBlob) => {
     const url = URL.createObjectURL(pdfBlob);
     window.open(url, "_blank"); // opens PDF in a new tab
   });
 };
  
+
   return (
     <div className="card w-100">
       {message && <div className="alert alert-danger mt-2">{message}</div>}
@@ -925,7 +986,8 @@ const handleOpenPdf = () => {
             <option value="Intra">Intra</option>
             <option value="Inter">Inter</option>
           </select>
-           </div>       
+           </div>   
+
           </div> 
         <div className="row mb-1">
            <div className="col-md-6">
@@ -933,7 +995,44 @@ const handleOpenPdf = () => {
             <textarea className="form-control" name="remarks"
                    value={formData.remarks} onChange={handleChange} rows={4}   />
           </div>
-            </div>
+            
+            <div className="col-md-6">
+              <label className="form-label">Attachment</label>
+              <input
+                type="file"
+                className="form-control"
+                onChange={(e) => {
+                  const file = e.target.files?.[0];
+                  if (!file) return;
+
+                  setSelectedFile(file);
+
+                  // Store ORIGINAL filename (end-user filename)
+                  setFormData(prev => ({
+                    ...prev,
+                    attachedfilename: file.name
+                  }));
+                }}
+              />
+
+              {fileUrl && (
+              <div>
+                <small className="text-muted">
+                  Selected File: {formData.attachedfilename}
+                </small>{" "}
+                <a
+                  href={fileUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="btn btn-link p-0"
+                >
+                  View
+                </a>
+              </div>
+            )}
+            </div> 
+            </div> 
+
         </header>
 
     {/* ===== Invoice Details Tabs ===== */}
@@ -1384,29 +1483,57 @@ const handleOpenPdf = () => {
     >   Preview PDF </button>
 
     {/* Download PDF Button */}
+    {  qrImage  &&(
     <PDFDownloadLink
-      document={<InvoicePDF data={pdfData} />}
+      document={<InvoicePDF data={pdfData} qrImage={qrImage} />}
       fileName={`Invoice-${pdfData?.invoice?.no}.pdf`}
       className="btn btn-success ms-2" // Add spacing with ms-2
     >
       {({ loading }) => (loading ? "Preparing PDF..." : "Download PDF")}
-    </PDFDownloadLink>
+    </PDFDownloadLink>)}
         </>
       ) : (
         <p className="text-muted mt-1">PDF preview will appear after saving the invoice.</p>
       )}
         </div>
       </form>
-      {showPdfModal && pdfData && (
-        <div style={{ position: "fixed", top: 0, left: 0, width: "100%", height: "100%", background: "#00000066", zIndex: 9999 }}>
-          <div style={{ width: "70%", height: "70%", margin: "5% auto", background: "#fff", padding: "10px", borderRadius: "5px" }}>
-            <PDFViewer width="100%" height="100%">
-              <InvoicePDF data={pdfData} />
-            </PDFViewer>
-            <button className="btn btn-danger mt-2" onClick={() => setShowPdfModal(false)}>Close</button>
-          </div>
-        </div>
-      )}
+      
+      {showPdfModal &&  pdfData && qrImage && (
+  <div
+    style={{
+      position: "fixed",
+      top: 0,
+      left: 0,
+      width: "100%",
+      height: "100%",
+      background: "#00000066",
+      zIndex: 9999,
+    }}
+  >
+    <div
+      style={{
+        width: "70%",
+        height: "70%",
+        margin: "5% auto",
+        background: "#fff",
+        padding: "10px",
+        borderRadius: "5px",
+      }}
+    >
+      <PDFViewer width="100%" height="100%" key={invoice.no}>
+        {pdfDocument}
+      </PDFViewer>
+
+      <button
+        className="btn btn-danger mt-2"
+        onClick={() => setShowPdfModal(false)}
+      >
+        Close
+      </button>
+    </div>
+  </div>
+)}
+
 
       <SearchModal
         show={showModal}
